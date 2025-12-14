@@ -2,7 +2,7 @@
 
 import pytest
 
-from dih.core.interfaces import IReader, IWriter, TableDefinition
+from src.dih.core.interfaces import IReader, IWriter, TableDefinition
 
 
 def test_table_definition_is_abstract():

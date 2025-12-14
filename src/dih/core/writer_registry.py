@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from pyspark.sql import DataFrame
 
-    from dih.core.interfaces import IWriter, TableDefinition
-    from dih.core.transformation import Transformation
+    from src.dih.core.interfaces import IWriter, TableDefinition
+    from src.dih.core.transformation import Transformation
 
 logger = logging.getLogger(__name__)
 

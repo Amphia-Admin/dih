@@ -4,7 +4,7 @@ import logging
 
 from pyspark.sql import DataFrame, SparkSession
 
-from dih.core.interfaces import IReader, TableDefinition
+from src.dih.core.interfaces import IReader, TableDefinition
 
 logger = logging.getLogger(__name__)
 

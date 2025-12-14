@@ -7,7 +7,7 @@ are added to track data lineage.
 
 from pyspark.sql import functions as F
 
-from dih import (
+from src.dih import (
     SparkDataFrameReader,
     SparkDataFrameWriter,
     Transformation,

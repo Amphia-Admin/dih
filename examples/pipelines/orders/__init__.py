@@ -21,17 +21,19 @@ run
 """
 
 __all__ = [
+    "DEFAULT_SPARK_CONF",
+    "LAKEHOUSE_ROOT",
+    "PIPELINE_METADATA",
+    "PIPELINE_ROOT",
     "BronzeOrders",
     "BronzeOrdersBatch1Transformation",
     "BronzeOrdersBatch2Transformation",
     "GoldDailySales",
     "GoldDailySalesTransformation",
-    "PipelineConfig",
     "SilverOrders",
     "SilverOrdersTransformation",
     "SourceOrdersBatch1",
     "SourceOrdersBatch2",
-    "configure_spark_with_delta_pip",
 ]
 
 from examples.pipelines.orders.bronze import (
@@ -39,8 +41,10 @@ from examples.pipelines.orders.bronze import (
     BronzeOrdersBatch2Transformation,
 )
 from examples.pipelines.orders.config import (
-    PipelineConfig,
-    configure_spark_with_delta_pip,
+    DEFAULT_SPARK_CONF,
+    LAKEHOUSE_ROOT,
+    PIPELINE_METADATA,
+    PIPELINE_ROOT,
 )
 from examples.pipelines.orders.gold import GoldDailySalesTransformation
 from examples.pipelines.orders.silver import SilverOrdersTransformation

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from dih.core.transformation import Transformation, transformation_definition
+from src.dih.core.transformation import Transformation, transformation_definition
 
 if TYPE_CHECKING:
     from pyspark.sql import SparkSession

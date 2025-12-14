@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from dih.core.interfaces import TableDefinition, TargetTableDefMixin
-from dih.io.spark_reader import SparkDataFrameReader
-from dih.io.spark_writer import SparkDataFrameWriter
+from src.dih.core.interfaces import TableDefinition, TargetTableDefMixin
+from src.dih.io.spark_reader import SparkDataFrameReader
+from src.dih.io.spark_writer import SparkDataFrameWriter
 
 if TYPE_CHECKING:
     from pyspark.sql import SparkSession

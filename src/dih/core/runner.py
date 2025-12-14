@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING, Any
 from delta import configure_spark_with_delta_pip
 from pyspark.sql import SparkSession
 
-from dih.core.reader_registry import ReaderRegistry
-from dih.core.writer_registry import WriterRegistry
-from dih.utils.loader import DynamicLoader
+from src.dih.core.reader_registry import ReaderRegistry
+from src.dih.core.writer_registry import WriterRegistry
+from src.dih.utils.loader import DynamicLoader
 
 if TYPE_CHECKING:
-    from dih.core.transformation import Transformation
+    from src.dih.core.transformation import Transformation
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class Runner:
         transformation: str | type[Transformation],
     ) -> None:
         """
-        Initialize runner.
+        initialise runner.
 
         Parameters
         ----------
@@ -56,7 +56,7 @@ class Runner:
         logger.info("Starting pipeline execution")
         try:
             self._create_spark_session()
-            self._initialize_transformation()
+            self._initialise_transformation()
             self._extract_input_data()
             self._set_metadata()
             self._execute_transformation()
@@ -89,8 +89,8 @@ class Runner:
                 spark.conf.set(key, value)
                 logger.debug(f"Set Spark config: {key}={value}")
 
-    def _initialize_transformation(self) -> None:
-        """Instantiate transformation and initialize registries."""
+    def _initialise_transformation(self) -> None:
+        """Instantiate transformation and initialise registries."""
         logger.info("Initializing transformation")
 
         # Load transformation class
@@ -105,15 +105,15 @@ class Runner:
         self._transformation.static_config = static_config
         logger.debug(f"Injected static_config: {static_config}")
 
-        # Initialize registries
+        # initialise registries
         self._reader_registry = ReaderRegistry()
         self._writer_registry = WriterRegistry()
-        logger.debug("Initialized reader and writer registries")
+        logger.debug("initialised reader and writer registries")
 
     def _extract_input_data(self) -> None:
         """Load input data via registered readers."""
         if self._transformation is None or self._reader_registry is None:
-            msg = "Transformation or registry not initialized"
+            msg = "Transformation or registry not initialised"
             raise RuntimeError(msg)
 
         logger.info("Extracting input data")
@@ -135,7 +135,7 @@ class Runner:
     def _set_metadata(self) -> None:
         """Inject metadata into transformation."""
         if self._transformation is None:
-            msg = "Transformation not initialized"
+            msg = "Transformation not initialised"
             raise RuntimeError(msg)
 
         metadata = self._run_config.get("metadata", {})
@@ -145,7 +145,7 @@ class Runner:
     def _execute_transformation(self) -> None:
         """Execute transformation process."""
         if self._transformation is None:
-            msg = "Transformation not initialized"
+            msg = "Transformation not initialised"
             raise RuntimeError(msg)
 
         logger.info("Executing transformation")
@@ -155,7 +155,7 @@ class Runner:
     def _load_output_data(self) -> None:
         """Write output data via registered writers."""
         if self._transformation is None or self._writer_registry is None:
-            msg = "Transformation or registry not initialized"
+            msg = "Transformation or registry not initialised"
             raise RuntimeError(msg)
 
         logger.info("Loading output data")

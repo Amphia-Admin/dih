@@ -4,8 +4,8 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from dih.core.interfaces import IReader, TableDefinition
-    from dih.core.transformation import Transformation
+    from src.dih.core.interfaces import IReader, TableDefinition
+    from src.dih.core.transformation import Transformation
 
 logger = logging.getLogger(__name__)
 

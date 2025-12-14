@@ -3,7 +3,7 @@
 
 This script demonstrates a complete medallion architecture pipeline
 for orders data, processing data through Bronze → Silver → Gold layers
-using the DIH framework.
+using the DIH framework with loadcore integration.
 
 The pipeline processes two batches of order data:
 - Batch 1: Initial load with 5 orders
@@ -14,18 +14,20 @@ This demonstrates:
 - Delta merge operations with partition locking
 - Data deduplication and cleansing
 - Business metric aggregations
+- Loadcore integration for catalog and secrets management
 """
 
-from pyspark.sql import SparkSession
-
-from dih import Runner
+from src.dih import Runner, create_run_config
+from loadcore.src.constructor import Configuration
 from examples.pipelines.orders.bronze import (
     BronzeOrdersBatch1Transformation,
     BronzeOrdersBatch2Transformation,
 )
 from examples.pipelines.orders.config import (
-    PipelineConfig,
-    configure_spark_with_delta_pip,
+    DEFAULT_SPARK_CONF,
+    LAKEHOUSE_ROOT,
+    PIPELINE_METADATA,
+    PIPELINE_ROOT,
 )
 from examples.pipelines.orders.gold import GoldDailySalesTransformation
 from examples.pipelines.orders.silver import SilverOrdersTransformation
@@ -37,50 +39,72 @@ def main() -> None:
 
     Pipeline Execution Flow
     -----------------------
-    1. Bronze Batch 1: Ingest initial orders from batch1.csv
-    2. Silver Batch 1: Clean, deduplicate, and merge to silver layer
-    3. Bronze Batch 2: Ingest updates from batch2.csv
-    4. Silver Batch 2: Merge updates (demonstrates upsert behavior)
-    5. Gold: Generate daily sales aggregations
+    1. initialise Spark session and catalog using loadcore
+    2. Create run configuration following pylynx pattern
+    3. Execute transformations:
+       - Bronze Batch 1: Ingest initial orders from batch1.csv
+       - Silver Batch 1: Clean, deduplicate, and merge to silver layer
+       - Bronze Batch 2: Ingest updates from batch2.csv
+       - Silver Batch 2: Merge updates (demonstrates upsert behavior)
+       - Gold: Generate daily sales aggregations
+    4. Verify results and validate data quality
 
-    Results Verification
+    Loadcore Integration
     --------------------
-    After execution, the script displays data from each layer and
-    validates expected record counts to ensure pipeline correctness.
+    loadcore automatically detects the environment (local vs Databricks):
+    - Local: Uses LocalSparkSessionBuilder with local catalog
+    - Databricks: Uses RemoteSparkSessionBuilder with Unity Catalog
+    - Handles secrets management for both environments
     """
-    # Initialize configuration
-    config = PipelineConfig()
-    run_config = config.get_run_config()
+    # =========================================================================
+    # initialise with loadcore
+    # =========================================================================
 
-    # Create Spark session with Delta Lake support
-    builder = (
-        SparkSession.builder.appName("OrdersPipeline")
-        .config(
-            "spark.sql.extensions",
-            "io.delta.sql.DeltaSparkSessionExtension",
-        )
-        .config(
-            "spark.sql.catalog.spark_catalog",
-            "org.apache.spark.sql.delta.catalog.DeltaCatalog",
-        )
+    print("=" * 80)
+    print("DIH Framework - Orders Pipeline (with loadcore)")
+    print("=" * 80)
+
+    # initialise Spark session and catalog using loadcore
+    # This will:
+    # - Detect environment (local vs remote)
+    # - Load secrets into environment variables
+    # - Create appropriate Spark session
+    # - Return catalog name
+    print("\nInitializing Spark session with loadcore...")
+    spark, catalog_name = Configuration().execute()
+    print(f"✓ Spark session initialised with catalog: {catalog_name}")
+
+    # =========================================================================
+    # Create run configuration
+    # =========================================================================
+
+    # Use pylynx-style run_cfg pattern instead of PipelineConfig class
+    run_cfg = create_run_config(
+        root_path=str(PIPELINE_ROOT),
+        spark_conf=DEFAULT_SPARK_CONF,
+        metadata=PIPELINE_METADATA,
+        static_config={
+            "catalog": catalog_name,
+            "lakehouse_root": str(LAKEHOUSE_ROOT),
+        },
     )
-    spark = configure_spark_with_delta_pip(builder).getOrCreate()
 
-    print("=" * 80)
-    print("DIH Framework - Orders Pipeline")
-    print("=" * 80)
+    print("\n✓ Run configuration created")
+    print(f"  - Root path: {run_cfg['root_path']}")
+    print(f"  - Catalog: {run_cfg['static_config']['catalog']}")
+    print(f"  - Lakehouse: {run_cfg['static_config']['lakehouse_root']}")
 
     # =========================================================================
     # Batch 1: Initial Load
     # =========================================================================
 
     print("\n[1/5] Running Bronze layer - Batch 1 (initial load)...")
-    runner = Runner(run_config, BronzeOrdersBatch1Transformation)
+    runner = Runner(run_cfg, BronzeOrdersBatch1Transformation)
     runner.run()
     print("✓ Bronze layer complete")
 
     print("\n[2/5] Running Silver layer - Batch 1...")
-    runner = Runner(run_config, SilverOrdersTransformation)
+    runner = Runner(run_cfg, SilverOrdersTransformation)
     runner.run()
     print("✓ Silver layer complete")
 
@@ -89,12 +113,12 @@ def main() -> None:
     # =========================================================================
 
     print("\n[3/5] Running Bronze layer - Batch 2 (updates)...")
-    runner = Runner(run_config, BronzeOrdersBatch2Transformation)
+    runner = Runner(run_cfg, BronzeOrdersBatch2Transformation)
     runner.run()
     print("✓ Bronze layer complete")
 
     print("\n[4/5] Running Silver layer - Batch 2 (merge updates)...")
-    runner = Runner(run_config, SilverOrdersTransformation)
+    runner = Runner(run_cfg, SilverOrdersTransformation)
     runner.run()
     print("✓ Silver layer complete")
 
@@ -103,7 +127,7 @@ def main() -> None:
     # =========================================================================
 
     print("\n[5/5] Running Gold layer (aggregations)...")
-    runner = Runner(run_config, GoldDailySalesTransformation)
+    runner = Runner(run_cfg, GoldDailySalesTransformation)
     runner.run()
     print("✓ Gold layer complete")
 
@@ -117,7 +141,7 @@ def main() -> None:
 
     print("\nBronze Orders (all batches appended):")
     bronze_df = spark.read.format("delta").load(
-        str(config.lakehouse_root / "bronze" / "orders")
+        str(LAKEHOUSE_ROOT / "bronze" / "orders")
     )
     print(f"Total records in bronze: {bronze_df.count()}")
     bronze_df.select("order_id", "status", "order_date", "ingestion_timestamp").orderBy(
@@ -126,7 +150,7 @@ def main() -> None:
 
     print("\nSilver Orders (deduplicated, merged):")
     silver_df = spark.read.format("delta").load(
-        str(config.lakehouse_root / "silver" / "orders")
+        str(LAKEHOUSE_ROOT / "silver" / "orders")
     )
     print(f"Total records in silver: {silver_df.count()}")
     silver_df.select(
@@ -135,7 +159,7 @@ def main() -> None:
 
     print("\nGold Daily Sales (aggregated metrics):")
     gold_df = spark.read.format("delta").load(
-        str(config.lakehouse_root / "gold" / "daily_sales")
+        str(LAKEHOUSE_ROOT / "gold" / "daily_sales")
     )
     gold_df.show(truncate=False)
 

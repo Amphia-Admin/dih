@@ -8,7 +8,7 @@ merge operations with automatic partition locking.
 from pyspark.sql import Window
 from pyspark.sql import functions as F
 
-from dih import (
+from src.dih import (
     DeltaMergeAutoPartitionWriter,
     SparkDataFrameReader,
     Transformation,

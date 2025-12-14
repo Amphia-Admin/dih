@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from dih.constants import LakeLayer
+from src.dih.constants import LakeLayer
 
 if TYPE_CHECKING:
     from pyspark.sql import SparkSession
@@ -17,7 +17,7 @@ class PathBuilder:
 
     def __init__(self, root_path: str | Path) -> None:
         """
-        Initialize with root path.
+        initialise with root path.
 
         Parameters
         ----------

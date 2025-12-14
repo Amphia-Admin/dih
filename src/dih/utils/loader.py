@@ -4,7 +4,7 @@ import importlib
 import logging
 from typing import Any
 
-from dih.core.transformation import Transformation
+from src.dih.core.transformation import Transformation
 
 logger = logging.getLogger(__name__)
 

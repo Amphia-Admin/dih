@@ -3,7 +3,7 @@
 import logging
 from typing import TYPE_CHECKING, Any
 
-from dih.core.interfaces import IWriter, TableDefinition, TargetTableDefMixin
+from src.dih.core.interfaces import IWriter, TableDefinition, TargetTableDefMixin
 
 if TYPE_CHECKING:
     from pyspark.sql import DataFrame

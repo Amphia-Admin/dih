@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING, Any
 
 from delta.tables import DeltaTable
 
-from dih.core.interfaces import TableDefinition, TargetTableDefMixin
-from dih.delta.writers.base import DeltaWriterBase
-from dih.delta.writers.utils import (
+from src.dih.core.interfaces import TableDefinition, TargetTableDefMixin
+from src.dih.delta.writers.base import DeltaWriterBase
+from src.dih.delta.writers.utils import (
     build_column_mapping,
     build_merge_condition,
     get_merge_options,

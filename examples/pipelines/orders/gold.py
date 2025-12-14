@@ -7,7 +7,7 @@ consumption by analytics and reporting tools.
 
 from pyspark.sql import functions as F
 
-from dih import (
+from src.dih import (
     SparkDataFrameReader,
     SparkDataFrameWriter,
     Transformation,

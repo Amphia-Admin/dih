@@ -11,7 +11,7 @@ services:
     init: true
     tty: true
     volumes:
-      - ../../:/workspace/dih-ingestion
+      - ../:/workspace/dih-ingestion
     ports:
       - 4042:4040
     restart: unless-stopped

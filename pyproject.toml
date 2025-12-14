@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "dih"
 version = "0.1.0"
@@ -8,6 +12,10 @@ dependencies = [
     "delta-spark>=3.0.0",
     "pandas>=2.0.0",
 ]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*", "examples*", "loadcore*"]
 
 [project.optional-dependencies]
 dev = [

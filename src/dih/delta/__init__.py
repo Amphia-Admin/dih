@@ -1,6 +1,6 @@
 """Delta Lake writers and utilities."""
 
-from dih.delta.writers import (
+from src.dih.delta.writers import (
     DeltaMergeAutoPartitionWriter,
     DeltaMergeWriter,
     DeltaWriterBase,
