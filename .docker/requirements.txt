@@ -1,0 +1,8 @@
+# Repository:   dih-ingestion
+# Path:         .docker/requirements.txt
+
+mypy
+delta-spark
+ruff
+pandas
+pyyaml

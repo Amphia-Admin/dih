@@ -1,0 +1,176 @@
+[project]
+name = "dih"
+version = "0.1.0"
+description = "DIH Ingestion Module"
+requires-python = ">=3.14.2"
+dependencies = [
+    "pyspark>=3.5.0",
+    "delta-spark>=3.0.0",
+    "pandas>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "mypy>=1.7.0",
+    "ruff>=0.1.0",
+    "pre-commit>=3.5.0",
+    "tox>=4.0.0",
+]
+
+[tool.ruff]
+target-version = "py314"
+
+# Include directories and files
+include = ["pyproject.toml", "*.py"]
+
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+    "**/tests/"
+]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "D212", 
+    "D203", 
+    "D211", 
+    "COM812", 
+    "ISC001", 
+    "ERA001", 
+    "Q000", 
+    "Q001",
+    "EXE002", 
+    "TD002", 
+    "TD003", 
+    "FIX002",
+    "D104",
+    "RET505",
+    "S506",
+    "PTH120",
+    "T201",
+    "PD901",
+    "N812",
+    "PLR2004", # Allow magic numbers
+    "C901", # Allow complex functions
+    "PLR0912", # Allow too many lines in function
+    "PLR0915", # Allow too many arguments in function
+    "RUF005", 
+]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+
+# Enable auto-formatting of code examples in docstrings. Markdown,
+docstring-code-format = false
+
+# Set the line length limit used when formatting code snippets in
+# docstrings.
+# This only has an effect when the `docstring-code-format` setting is
+# enabled.
+docstring-code-line-length = "dynamic"
+
+[tool.mypy]
+python_version = "3.14"
+ignore_missing_imports = true
+check_untyped_defs = true
+disallow_untyped_defs = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+disallow_untyped_decorators = true
+disallow_subclassing_any = true
+no_implicit_optional = true
+no_implicit_reexport = true
+show_error_codes = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_ignores = true
+warn_unused_configs = true
+strict_equality = true
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = "pyspark.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "delta.*"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--cov=dih",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "-v",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["src/dih"]
+omit = ["tests/*", "*/test_*.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
