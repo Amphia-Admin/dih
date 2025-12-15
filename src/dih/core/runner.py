@@ -11,7 +11,7 @@ from src.dih.core.writer_registry import WriterRegistry
 from src.dih.utils.loader import DynamicLoader
 
 if TYPE_CHECKING:
-    from src.dih.core.transformation import Transformation
+    from src.dih.core.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -22,19 +22,19 @@ class Runner:
     def __init__(
         self,
         run_config: dict[str, Any],
-        transformation: str | type[Transformation],
+        pipeline: str | type[Pipeline],
     ) -> None:
         """
-        initialise runner.
+        Initialise runner.
 
         Parameters
         ----------
         run_config : dict[str, Any]
             Configuration dict with required 'root_path' and optional
             'metadata', 'static_config', 'spark_conf', 'app_name'
-        transformation : str | type[Transformation]
+        pipeline : str | type[Pipeline]
             Fully qualified name (e.g., 'my.module.MyPipeline')
-            or Transformation class reference
+            or Pipeline class reference
 
         Raises
         ------
@@ -46,8 +46,8 @@ class Runner:
             raise ValueError(msg)
 
         self._run_config = run_config
-        self._transformation_ref = transformation
-        self._transformation: Transformation | None = None
+        self._pipeline_ref = pipeline
+        self._pipeline: Pipeline | None = None
         self._reader_registry: ReaderRegistry | None = None
         self._writer_registry: WriterRegistry | None = None
 
@@ -55,7 +55,7 @@ class Runner:
         """Execute complete pipeline: spark → init → extract → process → load."""
         logger.info("Starting pipeline execution")
         try:
-            self._create_spark_session()
+            # self._add_spark_confs_to_session()
             self._initialise_transformation()
             self._extract_input_data()
             self._set_metadata()
@@ -66,27 +66,12 @@ class Runner:
             logger.error(f"Pipeline execution failed: {e}")
             raise
 
-    def _create_spark_session(self) -> None:
+    def _add_spark_confs_to_session(self) -> None:
         """Create Spark session with Delta support."""
-        app_name = self._run_config.get("app_name", "DIH")
-        logger.info(f"Creating Spark session: {app_name}")
-
-        builder = (
-            SparkSession.builder.appName(app_name)
-            .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
-            .config(
-                "spark.sql.catalog.spark_catalog",
-                "org.apache.spark.sql.delta.catalog.DeltaCatalog",
-            )
-        )
-
-        spark = configure_spark_with_delta_pip(builder).getOrCreate()
-        logger.debug(f"Spark session created/retrieved: {spark.sparkContext.appName}")
-
         # Apply runtime configs
         if "spark_conf" in self._run_config:
             for key, value in self._run_config["spark_conf"].items():
-                spark.conf.set(key, value)
+                SparkSession.getActiveSession().conf.set(key, value)
                 logger.debug(f"Set Spark config: {key}={value}")
 
     def _initialise_transformation(self) -> None:
@@ -94,7 +79,7 @@ class Runner:
         logger.info("Initializing transformation")
 
         # Load transformation class
-        transform_class = DynamicLoader.load_transformation(self._transformation_ref)
+        transform_class = DynamicLoader.load_transformation(self._pipeline_ref)
         logger.debug(f"Loaded transformation class: {transform_class.__name__}")
 
         # Instantiate

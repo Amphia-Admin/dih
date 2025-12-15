@@ -1,4 +1,4 @@
-"""Transformation base classes and decorators."""
+"""Pipeline base classes and decorators."""
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
@@ -50,8 +50,8 @@ class AbstractProcessingComponent(ABC):
         return self._outputs
 
 
-class Transformation(AbstractProcessingComponent):
-    """Base class for transformations/pipelines."""
+class Pipeline(AbstractProcessingComponent):
+    """Base class for pipelines."""
 
     name: str = ""
     description: str = ""
@@ -60,23 +60,31 @@ class Transformation(AbstractProcessingComponent):
         super().__init__()
 
     def process(self, *args: Any, **kwargs: Any) -> None:
-        """Override in subclass to implement transformation logic."""
+        """Override in subclass to implement pipeline logic."""
 
     def __repr__(self) -> str:
+        """
+        Return string representation of the pipeline.
+
+        Returns
+        -------
+        str
+            String representation.
+        """
         desc = self.description[:50] + "..." if len(self.description) > 50 else self.description
         return f"<{self.__class__.__name__}: {desc}>"
 
 
-def transformation_definition(name: str, description: str = "") -> Any:
-    """Define transformation metadata via decorator."""
+def pipeline_definition(name: str, description: str = "") -> Any:
+    """Define pipeline metadata via decorator."""
 
-    def decorator(transform: type[Transformation]) -> type[Transformation]:
-        if not issubclass(transform, Transformation):
-            msg = "Expected subclass of 'Transformation'"
+    def decorator(pipeline: type[Pipeline]) -> type[Pipeline]:
+        if not issubclass(pipeline, Pipeline):
+            msg = "Expected subclass of 'Pipeline'"
             raise ValueError(msg)
 
-        transform.name = name
-        transform.description = description
-        return transform
+        pipeline.name = name
+        pipeline.description = description
+        return pipeline
 
     return decorator

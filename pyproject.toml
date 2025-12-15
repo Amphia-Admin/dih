@@ -90,7 +90,8 @@ ignore = [
     "C901", # Allow complex functions
     "PLR0912", # Allow too many lines in function
     "PLR0915", # Allow too many arguments in function
-    "RUF005", 
+    "RUF005",
+    "G004", # Allow use of logging-f-string
 ]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.

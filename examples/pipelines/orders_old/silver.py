@@ -8,21 +8,21 @@ merge operations with automatic partition locking.
 from pyspark.sql import Window
 from pyspark.sql import functions as F
 
-from src.dih import (
-    DeltaMergeAutoPartitionWriter,
-    SparkDataFrameReader,
-    Transformation,
-    register_reader,
-    register_writer,
-    transformation_definition,
+from src.dih.readers.spark_reader import SparkDataFrameReader
+from src.dih.delta.writers.merge_auto_partition import DeltaMergeAutoPartitionWriter
+from src.dih.core.pipeline import (
+    Pipeline,
+    pipeline_definition,
 )
-from examples.pipelines.orders.table_definitions import BronzeOrders, SilverOrders
+from src.dih.core.reader_registry import register_reader
+from src.dih.core.writer_registry import register_writer
+from examples.pipelines.orders_old.table_definitions import BronzeOrders, SilverOrders
 
 
-@transformation_definition(name="silver_orders")
+@pipeline_definition(name="silver_orders")
 @register_reader(BronzeOrders, SparkDataFrameReader, alias="bronze_orders")
 @register_writer(SilverOrders, DeltaMergeAutoPartitionWriter, alias="silver_orders")
-class SilverOrdersTransformation(Transformation):
+class SilverOrdersTransformation(Pipeline):
     """
     Silver layer transformation for order data.
 

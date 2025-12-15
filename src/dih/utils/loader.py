@@ -4,7 +4,7 @@ import importlib
 import logging
 from typing import Any
 
-from src.dih.core.transformation import Transformation
+from src.dih.core.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -68,8 +68,8 @@ class DynamicLoader:
 
     @staticmethod
     def load_transformation(
-        reference: str | type[Transformation],
-    ) -> type[Transformation]:
+        reference: str | type[Pipeline],
+    ) -> type[Pipeline]:
         """
         Load transformation class from string FQN or return class if already loaded.
 
@@ -94,7 +94,7 @@ class DynamicLoader:
         """
         # If already a class, validate and return
         if not isinstance(reference, str):
-            if not isinstance(reference, type) or not issubclass(reference, Transformation):
+            if not isinstance(reference, type) or not issubclass(reference, Pipeline):
                 msg = (
                     f"Expected Transformation class or string, got {type(reference)}. "
                     f"Ensure the class inherits from Transformation."
@@ -108,7 +108,7 @@ class DynamicLoader:
         cls = DynamicLoader.load_class(reference)
 
         # Validate it's a Transformation subclass
-        if not isinstance(cls, type) or not issubclass(cls, Transformation):
+        if not isinstance(cls, type) or not issubclass(cls, Pipeline):
             msg = (
                 f"Loaded class '{cls}' is not a Transformation subclass. "
                 f"Ensure the class inherits from Transformation."

@@ -17,7 +17,7 @@ class PathBuilder:
 
     def __init__(self, root_path: str | Path) -> None:
         """
-        initialise with root path.
+        Initialise with root path.
 
         Parameters
         ----------
@@ -130,41 +130,3 @@ class PathBuilder:
         """
         return Path(self.build())
 
-
-def path_exists(path: str | Path, spark: SparkSession | None = None) -> bool:
-    """
-    Check if path exists (supports local, DBFS, S3).
-
-    Parameters
-    ----------
-    path : str | Path
-        Path to check
-    spark : SparkSession | None, optional
-        Optional SparkSession for distributed filesystem checks
-
-    Returns
-    -------
-    bool
-        True if path exists and is accessible
-    """
-    path_str = str(path)
-
-    # For distributed filesystems (S3, DBFS), use Spark if available
-    if spark and (path_str.startswith(("s3://", "s3a://", "dbfs://", "abfss://"))):
-        try:
-            # Access Spark's JVM for Hadoop filesystem operations
-            # Using private Spark attributes for Hadoop FileSystem access
-            fs_class = spark._jvm.org.apache.hadoop.fs.FileSystem  # type: ignore
-            hadoop_path_class = spark._jvm.org.apache.hadoop.fs.Path  # type: ignore
-            hadoop_conf = spark._jsc.hadoopConfiguration()
-
-            # Check if path exists using Hadoop FileSystem
-            fs = fs_class.get(hadoop_conf)
-            hadoop_path = hadoop_path_class(path_str)
-            return bool(fs.exists(hadoop_path))
-        except Exception as e:
-            logger.debug(f"Path check failed for {path_str}: {e}")
-            return False
-
-    # For local paths
-    return Path(path).exists()

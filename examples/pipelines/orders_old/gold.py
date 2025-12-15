@@ -7,23 +7,23 @@ consumption by analytics and reporting tools.
 
 from pyspark.sql import functions as F
 
-from src.dih import (
-    SparkDataFrameReader,
-    SparkDataFrameWriter,
-    Transformation,
-    register_reader,
-    register_writer,
-    transformation_definition,
+from src.dih.readers.spark_reader import SparkDataFrameReader
+from src.dih.writers.spark_writer import SparkDataFrameWriter
+from src.dih.core.pipeline import (
+    Pipeline,
+    pipeline_definition,
 )
-from examples.pipelines.orders.table_definitions import GoldDailySales, SilverOrders
+from src.dih.core.reader_registry import register_reader
+from src.dih.core.writer_registry import register_writer
+from examples.pipelines.orders_old.table_definitions import GoldDailySales, SilverOrders
 
 
-@transformation_definition(name="gold_daily_sales")
+@pipeline_definition(name="gold_daily_sales")
 @register_reader(SilverOrders, SparkDataFrameReader, alias="silver_orders")
 @register_writer(GoldDailySales, SparkDataFrameWriter, alias="gold_sales")
-class GoldDailySalesTransformation(Transformation):
+class GoldDailySalesTransformation(Pipeline):
     """
-    Gold layer transformation for daily sales metrics.
+    Gold layer pipeline for daily sales metrics.
 
     Aggregates silver layer data to produce business-ready metrics
     for daily sales performance analysis. Only includes completed

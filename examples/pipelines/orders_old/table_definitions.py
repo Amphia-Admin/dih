@@ -8,7 +8,9 @@ and Gold layers.
 from pathlib import Path
 from typing import Any
 
-from src.dih import LakeLayer, PathBuilder, TableDefinition, TargetTableDefMixin
+from src.dih.utils.paths import PathBuilder
+from src.dih.constants import LakeLayer
+from src.dih.core.table_interfaces import TableDefinition, TargetTableDefMixin
 
 
 class SourceOrdersBatch1(TableDefinition):

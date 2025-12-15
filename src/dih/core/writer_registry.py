@@ -6,8 +6,9 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from pyspark.sql import DataFrame
 
-    from src.dih.core.interfaces import IWriter, TableDefinition
-    from src.dih.core.transformation import Transformation
+    from src.dih.core.table_interfaces import TableDefinition
+    from src.dih.writers.base_spark_writer import AbstractWriter
+    from src.dih.core.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -23,12 +24,12 @@ class WriterRegistry:
         def __init__(
             self,
             definition_type: type[TableDefinition],
-            writer: type[IWriter],
+            writer: type[AbstractWriter],
             **kwargs: Any,
         ) -> None:
             self._definition_type = definition_type
             self.aliases: list[str] = []
-            self.transforms: list[type[Transformation]] = []
+            self.transforms: list[type[Pipeline]] = []
             self._writer = writer
             self._kwargs = kwargs
 
@@ -59,8 +60,8 @@ class WriterRegistry:
         self,
         name: str,
         definition_type: type[TableDefinition],
-        writer: type[IWriter],
-        transformation: type[Transformation],
+        writer: type[AbstractWriter],
+        transformation: type[Pipeline],
         **kwargs: Any,
     ) -> None:
         """Register a writer internally with the registry."""
@@ -85,8 +86,8 @@ class WriterRegistry:
         self,
         alias: str,
         definition_type: type[TableDefinition],
-        writer: type[IWriter],
-        transformation: type[Transformation],
+        writer: type[AbstractWriter],
+        transformation: type[Pipeline],
         **kwargs: Any,
     ) -> None:
         """Public registration method."""
@@ -97,7 +98,7 @@ class WriterRegistry:
         """Return all registered writers."""
         return list(self._alias_lookup.values())
 
-    def get_writers(self, transformation: type[Transformation]) -> list[RegisteredWriter]:
+    def get_writers(self, transformation: type[Pipeline]) -> list[RegisteredWriter]:
         """Get all writers for a specific transformation."""
         return [
             writer
@@ -112,7 +113,7 @@ class register_writer:
     def __init__(
         self,
         definition: type[TableDefinition],
-        writer: type[IWriter],
+        writer: type[AbstractWriter],
         alias: str | None = None,
         **kwargs: Any,
     ) -> None:
@@ -133,7 +134,7 @@ class register_writer:
         self._kwargs = kwargs
         self._registry = WriterRegistry()
 
-    def __call__(self, transformation: type[Transformation]) -> type[Transformation]:
+    def __call__(self, transformation: type[Pipeline]) -> type[Pipeline]:
         """Register the transformation with the writer."""
         self._registry.register(
             alias=self._alias,

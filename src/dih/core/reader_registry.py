@@ -4,8 +4,9 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from src.dih.core.interfaces import IReader, TableDefinition
-    from src.dih.core.transformation import Transformation
+    from src.dih.core.table_interfaces import TableDefinition
+    from src.dih.readers.base_spark_reader import AbstractReader
+    from src.dih.core.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -21,12 +22,12 @@ class ReaderRegistry:
         def __init__(
             self,
             definition_type: type[TableDefinition],
-            reader: type[IReader],
+            reader: type[AbstractReader],
             **kwargs: Any,
         ) -> None:
             self._definition_type = definition_type
             self.aliases: list[str] = []
-            self.transforms: list[type[Transformation]] = []
+            self.transforms: list[type[Pipeline]] = []
             self._reader = reader
             self._kwargs = kwargs
 
@@ -36,7 +37,7 @@ class ReaderRegistry:
         def __hash__(self) -> int:
             return hash((self._definition_type, self._reader))
 
-        def read(self, root_path: str) -> IReader:
+        def read(self, root_path: str) -> AbstractReader:
             """Instantiate and execute the reader."""
             def_obj = self._definition_type()
             def_obj.root_path = root_path
@@ -59,8 +60,8 @@ class ReaderRegistry:
         self,
         name: str,
         definition_type: type[TableDefinition],
-        reader: type[IReader],
-        transformation: type[Transformation],
+        reader: type[AbstractReader],
+        transformation: type[Pipeline],
         **kwargs: Any,
     ) -> None:
         """Register a reader internally with the registry."""
@@ -85,8 +86,8 @@ class ReaderRegistry:
         self,
         alias: str,
         definition_type: type[TableDefinition],
-        reader: type[IReader],
-        transformation: type[Transformation],
+        reader: type[AbstractReader],
+        transformation: type[Pipeline],
         **kwargs: Any,
     ) -> None:
         """Public registration method."""
@@ -97,7 +98,7 @@ class ReaderRegistry:
         """Return all registered readers."""
         return list(self._alias_lookup.values())
 
-    def get_readers(self, transformation: type[Transformation]) -> list[RegisteredReader]:
+    def get_readers(self, transformation: type[Pipeline]) -> list[RegisteredReader]:
         """Get all readers for a specific transformation."""
         return [
             reader
@@ -112,7 +113,7 @@ class register_reader:
     def __init__(
         self,
         definition: type[TableDefinition],
-        reader: type[IReader],
+        reader: type[AbstractReader],
         alias: str | None = None,
         **kwargs: Any,
     ) -> None:
@@ -133,7 +134,7 @@ class register_reader:
         self._kwargs = kwargs
         self._registry = ReaderRegistry()
 
-    def __call__(self, transformation: type[Transformation]) -> type[Transformation]:
+    def __call__(self, transformation: type[Pipeline]) -> type[Pipeline]:
         """Register the transformation with the reader."""
         self._registry.register(
             alias=self._alias,
