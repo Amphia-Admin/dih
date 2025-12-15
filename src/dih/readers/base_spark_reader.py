@@ -3,13 +3,29 @@
 import logging
 
 from pyspark.sql import DataFrame, SparkSession
-
-from src.dih.core.interfaces import IReader, TableDefinition
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.dih.core.table_interfaces import TableDefinition
 
 logger = logging.getLogger(__name__)
 
+class AbstractReader(ABC):
+    """Abstract reader interface."""
 
-class SparkDataFrameReader(IReader):
+    @abstractmethod
+    def read(self, input_def: TableDefinition) -> DataFrame:
+        """Read data from source and return DataFrame."""
+        ...
+
+    @property
+    @abstractmethod
+    def data(self) -> DataFrame:
+        """Return the loaded DataFrame."""
+        ...
+
+
+class SparkDataFrameReader(AbstractReader):
     """Generic Spark DataFrame reader."""
 
     def __init__(self) -> None:

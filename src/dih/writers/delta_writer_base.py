@@ -6,15 +6,15 @@ from typing import TYPE_CHECKING, Any
 
 from delta.tables import DeltaTable
 
-from src.dih.core.interfaces import IWriter, TableDefinition, TargetTableDefMixin
-
+from src.dih.core.table_interfaces import TableDefinition, TargetTableDefMixin
+from src.dih.writers.base_spark_writer import AbstractWriter
 if TYPE_CHECKING:
     from pyspark.sql import DataFrame, SparkSession
 
 logger = logging.getLogger(__name__)
 
 
-class DeltaWriterBase(IWriter):
+class DeltaWriterBase(AbstractWriter):
     """Abstract base class for Delta writers with merge capabilities."""
 
     def write(self, df: DataFrame, output_def: TableDefinition, **kwargs: Any) -> None:

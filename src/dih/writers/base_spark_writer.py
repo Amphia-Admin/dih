@@ -3,15 +3,25 @@
 import logging
 from typing import TYPE_CHECKING, Any
 
-from src.dih.core.interfaces import IWriter, TableDefinition, TargetTableDefMixin
-
+from src.dih.core.table_interfaces import TableDefinition, TargetTableDefMixin
+from abc import ABC, abstractmethod
 if TYPE_CHECKING:
     from pyspark.sql import DataFrame
 
 logger = logging.getLogger(__name__)
 
 
-class SparkDataFrameWriter(IWriter):
+
+class AbstractWriter(ABC):
+    """Abstract writer interface."""
+
+    @abstractmethod
+    def write(self, df: DataFrame, output_def: TableDefinition, **kwargs: Any) -> None:
+        """Write DataFrame to target."""
+        ...
+
+
+class SparkDataFrameWriter(AbstractWriter):
     """Generic Spark DataFrame writer."""
 
     def write(self, df: DataFrame, output_def: TableDefinition, **kwargs: Any) -> None:
