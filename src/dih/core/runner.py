@@ -3,7 +3,6 @@
 import logging
 from typing import TYPE_CHECKING, Any
 
-from delta import configure_spark_with_delta_pip
 from pyspark.sql import SparkSession
 
 from src.dih.core.reader_registry import ReaderRegistry
@@ -55,11 +54,11 @@ class Runner:
         """Execute complete pipeline: spark → init → extract → process → load."""
         logger.info("Starting pipeline execution")
         try:
-            # self._add_spark_confs_to_session()
-            self._initialise_transformation()
+            self._add_spark_confs_to_session()
+            self._initialise_pipeline()
             self._extract_input_data()
             self._set_metadata()
-            self._execute_transformation()
+            self._execute_pipeline()
             self._load_output_data()
             logger.info("Pipeline execution completed successfully")
         except Exception as e:
@@ -74,20 +73,20 @@ class Runner:
                 SparkSession.getActiveSession().conf.set(key, value)
                 logger.debug(f"Set Spark config: {key}={value}")
 
-    def _initialise_transformation(self) -> None:
-        """Instantiate transformation and initialise registries."""
-        logger.info("Initializing transformation")
+    def _initialise_pipeline(self) -> None:
+        """Instantiate pipeline and initialise registries."""
+        logger.info("Initialising pipeline")
 
-        # Load transformation class
-        transform_class = DynamicLoader.load_transformation(self._pipeline_ref)
-        logger.debug(f"Loaded transformation class: {transform_class.__name__}")
+        # Load pipeline class
+        pipeline_class = DynamicLoader.load_pipeline(self._pipeline_ref)
+        logger.debug(f"Loaded pipeline class: {pipeline_class.__name__}")
 
         # Instantiate
-        self._transformation = transform_class()
+        self._pipeline = pipeline_class()
 
         # Inject static config
         static_config = self._run_config.get("static_config", {})
-        self._transformation.static_config = static_config
+        self._pipeline.static_config = static_config
         logger.debug(f"Injected static_config: {static_config}")
 
         # initialise registries
@@ -97,13 +96,13 @@ class Runner:
 
     def _extract_input_data(self) -> None:
         """Load input data via registered readers."""
-        if self._transformation is None or self._reader_registry is None:
-            msg = "Transformation or registry not initialised"
+        if self._pipeline is None or self._reader_registry is None:
+            msg = "Pipeline or registry not initialised"
             raise RuntimeError(msg)
 
         logger.info("Extracting input data")
 
-        readers = self._reader_registry.get_readers(type(self._transformation))
+        readers = self._reader_registry.get_readers(type(self._pipeline))
         logger.debug(f"Found {len(readers)} registered reader(s)")
 
         root_path = str(self._run_config["root_path"])
@@ -112,44 +111,44 @@ class Runner:
             logger.debug(f"Reading input: {alias}")
 
             reader = registered_reader.read(root_path)
-            self._transformation.inputs[alias] = reader.data
+            self._pipeline.inputs[alias] = reader.data
             logger.debug(f"Loaded input '{alias}' with {reader.data.count()} rows")
 
-        logger.info(f"Loaded {len(self._transformation.inputs)} input(s)")
+        logger.info(f"Loaded {len(self._pipeline.inputs)} input(s)")
 
     def _set_metadata(self) -> None:
-        """Inject metadata into transformation."""
-        if self._transformation is None:
-            msg = "Transformation not initialised"
+        """Inject metadata into pipeline."""
+        if self._pipeline is None:
+            msg = "Pipeline not initialised"
             raise RuntimeError(msg)
 
         metadata = self._run_config.get("metadata", {})
-        self._transformation.metadata = metadata
+        self._pipeline.metadata = metadata
         logger.debug(f"Injected metadata: {metadata}")
 
-    def _execute_transformation(self) -> None:
-        """Execute transformation process."""
-        if self._transformation is None:
-            msg = "Transformation not initialised"
+    def _execute_pipeline(self) -> None:
+        """Execute pipeline."""
+        if self._pipeline is None:
+            msg = "Pipeline not initialised"
             raise RuntimeError(msg)
 
-        logger.info("Executing transformation")
-        self._transformation.process()
-        logger.info(f"Generated {len(self._transformation.outputs)} output(s)")
+        logger.info("Executing pipeline")
+        self._pipeline.process()
+        logger.info(f"Generated {len(self._pipeline.outputs)} output(s)")
 
     def _load_output_data(self) -> None:
         """Write output data via registered writers."""
-        if self._transformation is None or self._writer_registry is None:
-            msg = "Transformation or registry not initialised"
+        if self._pipeline is None or self._writer_registry is None:
+            msg = "Pipeline or registry not initialised"
             raise RuntimeError(msg)
 
         logger.info("Loading output data")
 
-        writers = self._writer_registry.get_writers(type(self._transformation))
+        writers = self._writer_registry.get_writers(type(self._pipeline))
         logger.debug(f"Found {len(writers)} registered writer(s)")
 
         root_path = str(self._run_config["root_path"])
-        outputs = self._transformation.outputs.results
+        outputs = self._pipeline.outputs.results
 
         for output_name, output_df in outputs.items():
             logger.debug(f"Writing output: {output_name}")

@@ -49,7 +49,7 @@ class WriterRegistry:
 
     def __init__(self) -> None:
         if not WriterRegistry._shared_state:
-            logger.info("Initializing WriterRegistry")
+            logger.info("Initialising WriterRegistry")
             WriterRegistry._shared_state = self.__dict__
             self._alias_lookup: dict[str, WriterRegistry.RegisteredWriter] = {}
             self._registered_writers: dict[int, WriterRegistry.RegisteredWriter] = {}

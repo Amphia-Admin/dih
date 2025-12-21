@@ -67,21 +67,21 @@ class DynamicLoader:
             raise AttributeError(msg) from e
 
     @staticmethod
-    def load_transformation(
+    def load_pipeline(
         reference: str | type[Pipeline],
     ) -> type[Pipeline]:
         """
-        Load transformation class from string FQN or return class if already loaded.
+        Load pipeline class from string FQN or return class if already loaded.
 
         Parameters
         ----------
-        reference : str | type[Transformation]
-            Either a fully qualified name string or a Transformation class
+        reference : str | type[Pipeline]
+            Either a fully qualified name string or a Pipeline class
 
         Returns
         -------
-        type[Transformation]
-            Transformation class (not instance)
+        type[Pipeline]
+            Pipeline class (not instance)
 
         Raises
         ------
@@ -90,30 +90,30 @@ class DynamicLoader:
         AttributeError
             If class cannot be found in module
         TypeError
-            If loaded class is not a Transformation subclass
+            If loaded class is not a Pipeline subclass
         """
         # If already a class, validate and return
         if not isinstance(reference, str):
             if not isinstance(reference, type) or not issubclass(reference, Pipeline):
                 msg = (
-                    f"Expected Transformation class or string, got {type(reference)}. "
-                    f"Ensure the class inherits from Transformation."
+                    f"Expected Pipeline class or string, got {type(reference)}. "
+                    f"Ensure the class inherits from Pipeline."
                 )
                 raise TypeError(msg)
             logger.debug(f"Using provided class: {reference.__name__}")
             return reference
 
         # Load from string
-        logger.info(f"Loading transformation from string: {reference}")
+        logger.info(f"Loading pipeline from string: {reference}")
         cls = DynamicLoader.load_class(reference)
 
-        # Validate it's a Transformation subclass
+        # Validate it's a Pipeline subclass
         if not isinstance(cls, type) or not issubclass(cls, Pipeline):
             msg = (
-                f"Loaded class '{cls}' is not a Transformation subclass. "
-                f"Ensure the class inherits from Transformation."
+                f"Loaded class '{cls}' is not a Pipeline subclass. "
+                f"Ensure the class inherits from Pipeline."
             )
             raise TypeError(msg)
 
-        logger.info(f"Successfully loaded transformation: {cls.__name__}")
+        logger.info(f"Successfully loaded pipeline: {cls.__name__}")
         return cls

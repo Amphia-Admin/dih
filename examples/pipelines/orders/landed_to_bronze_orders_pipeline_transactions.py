@@ -1,7 +1,7 @@
 from pyspark.sql import functions as F
 
-from src.dih.readers.spark_reader import SparkDataFrameReader
-from src.dih.writers.spark_writer import SparkDataFrameWriter
+from src.dih.readers.base_spark_reader import SparkDataFrameReader
+from src.dih.writers.base_spark_writer import SparkDataFrameWriter
 from src.dih.core.pipeline import (
     Pipeline,
     pipeline_definition

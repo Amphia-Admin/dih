@@ -49,7 +49,7 @@ class ReaderRegistry:
 
     def __init__(self) -> None:
         if not ReaderRegistry._shared_state:
-            logger.info("Initializing ReaderRegistry")
+            logger.info("Initialising ReaderRegistry")
             ReaderRegistry._shared_state = self.__dict__
             self._alias_lookup: dict[str, ReaderRegistry.RegisteredReader] = {}
             self._registered_readers: dict[int, ReaderRegistry.RegisteredReader] = {}
@@ -98,12 +98,12 @@ class ReaderRegistry:
         """Return all registered readers."""
         return list(self._alias_lookup.values())
 
-    def get_readers(self, transformation: type[Pipeline]) -> list[RegisteredReader]:
-        """Get all readers for a specific transformation."""
+    def get_readers(self, pipeline: type[Pipeline]) -> list[RegisteredReader]:
+        """Get all readers for a specific pipeline."""
         return [
             reader
             for reader in self._registered_readers.values()
-            if transformation in reader.transforms
+            if pipeline in reader.transforms
         ]
 
 

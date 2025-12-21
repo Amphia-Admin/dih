@@ -50,31 +50,31 @@ runner.run()
 
 
 
-print("\n[2/5] Running Silver layer - Batch 1...")
-runner = Runner(run_cfg, SilverOrdersTransformation)
-runner.run()
-print("✓ Silver layer complete")
+# print("\n[2/5] Running Silver layer - Batch 1...")
+# runner = Runner(run_cfg, SilverOrdersTransformation)
+# runner.run()
+# print("✓ Silver layer complete")
 
-# =========================================================================
-# Batch 2: Updates (status changes + new orders)
-# =========================================================================
+# # =========================================================================
+# # Batch 2: Updates (status changes + new orders)
+# # =========================================================================
 
-print("\n[3/5] Running Bronze layer - Batch 2 (updates)...")
-runner = Runner(run_cfg, BronzeOrdersBatch2Transformation)
-runner.run()
-print("✓ Bronze layer complete")
+# print("\n[3/5] Running Bronze layer - Batch 2 (updates)...")
+# runner = Runner(run_cfg, BronzeOrdersBatch2Transformation)
+# runner.run()
+# print("✓ Bronze layer complete")
 
-print("\n[4/5] Running Silver layer - Batch 2 (merge updates)...")
-runner = Runner(run_cfg, SilverOrdersTransformation)
-runner.run()
-print("✓ Silver layer complete")
+# print("\n[4/5] Running Silver layer - Batch 2 (merge updates)...")
+# runner = Runner(run_cfg, SilverOrdersTransformation)
+# runner.run()
+# print("✓ Silver layer complete")
 
-# =========================================================================
-# Gold Layer: Aggregations
-# =========================================================================
+# # =========================================================================
+# # Gold Layer: Aggregations
+# # =========================================================================
 
-print("\n[5/5] Running Gold layer (aggregations)...")
-runner = Runner(run_cfg, GoldDailySalesTransformation)
-runner.run()
-print("✓ Gold layer complete")
+# print("\n[5/5] Running Gold layer (aggregations)...")
+# runner = Runner(run_cfg, GoldDailySalesTransformation)
+# runner.run()
+# print("✓ Gold layer complete")
 
