@@ -131,6 +131,7 @@ dmypy.json
 # PyCharm config
 .idea/
 
-# OSX specific
+# Project specific
 .DS_Store
 lakehouse
+**/*.jsonl
