@@ -21,7 +21,7 @@ class AbstractSessionBuilder(ABC):
 class LocalSparkSessionBuilder(AbstractSessionBuilder):
     """Provides methods to create and configure a Local Spark session."""
 
-    def __init__(self, app_name: str, catalog_name: str) -> None:
+    def __init__(self, app_name: str, warehouse_path: str) -> None:
         """
         Initialise a local spark session.
 
@@ -29,12 +29,12 @@ class LocalSparkSessionBuilder(AbstractSessionBuilder):
         ----------
         app_name : str
             The app name for the spark session constructor
-        catalog_name : str
-            The local catalog name
+        warehouse_path : str
+            Path to the local warehouse/catalog directory
 
         """
         self.app_name = app_name
-        self.catalog_name = catalog_name
+        self.warehouse_path = warehouse_path
 
     @property
     def builder(self) -> SparkSession.Builder:
@@ -50,19 +50,14 @@ class LocalSparkSessionBuilder(AbstractSessionBuilder):
         return (
             SparkSession.builder.appName(self.app_name)
             .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
-            .config("spark.sql.warehouse.dir", self.catalog_name)
+            .config("spark.sql.warehouse.dir", self.warehouse_path)
             .config(
-                f"spark.sql.catalog.{self.catalog_name}",  # Catalog cannot be renamed
+                "spark.sql.catalog.spark_catalog",
                 "org.apache.spark.sql.delta.catalog.DeltaCatalog",
             )
             .config("spark.databricks.delta.optimizeWrite.enabled", "true")
             .config("spark.databricks.delta.autoCompact.enabled", "true")
-            # .config("spark.driver.memory", "4g")
-            # .config("spark.executor.memory", "12g")
-            # .config("spark.sql.shuffle.partitions", "200")
             .config("spark.sql.execution.arrow.enabled", "true")
-            # TODO: Set executor cores print(f"Executor cores: {sc.defaultParallelism}")
-            # spark.conf.set("spark.sql.shuffle.partitions", sc.defaultParallelism)
             .enableHiveSupport()
         )
 

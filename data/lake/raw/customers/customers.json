@@ -1,0 +1,72 @@
+[
+  {
+    "customer_id": "C001",
+    "first_name": "John",
+    "last_name": "Smith",
+    "email": "john.smith@email.com",
+    "phone": "+1-555-0101",
+    "address": {
+      "street": "123 Main St",
+      "city": "New York",
+      "state": "NY",
+      "zip": "10001"
+    },
+    "registration_date": "2024-01-15"
+  },
+  {
+    "customer_id": "C002",
+    "first_name": "Jane",
+    "last_name": "Doe",
+    "email": "jane.doe@email.com",
+    "phone": "+1-555-0102",
+    "address": {
+      "street": "456 Oak Ave",
+      "city": "Los Angeles",
+      "state": "CA",
+      "zip": "90001"
+    },
+    "registration_date": "2024-02-20"
+  },
+  {
+    "customer_id": "C003",
+    "first_name": "Bob",
+    "last_name": "Johnson",
+    "email": "bob.johnson@email.com",
+    "phone": "+1-555-0103",
+    "address": {
+      "street": "789 Pine Rd",
+      "city": "Chicago",
+      "state": "IL",
+      "zip": "60601"
+    },
+    "registration_date": "2024-03-10"
+  },
+  {
+    "customer_id": "C004",
+    "first_name": "Alice",
+    "last_name": "Williams",
+    "email": "alice.williams@email.com",
+    "phone": "+1-555-0104",
+    "address": {
+      "street": "321 Elm Blvd",
+      "city": "Houston",
+      "state": "TX",
+      "zip": "77001"
+    },
+    "registration_date": "2024-03-25"
+  },
+  {
+    "customer_id": "C005",
+    "first_name": "Charlie",
+    "last_name": "Brown",
+    "email": "charlie.brown@email.com",
+    "phone": "+1-555-0105",
+    "address": {
+      "street": "654 Maple Dr",
+      "city": "Phoenix",
+      "state": "AZ",
+      "zip": "85001"
+    },
+    "registration_date": "2024-04-05"
+  }
+]

@@ -39,10 +39,16 @@ class WriterRegistry:
         def __hash__(self) -> int:
             return hash((self._definition_type, self._writer))
 
-        def write(self, df: DataFrame, root_path: str) -> None:
+        def write(
+            self,
+            df: DataFrame,
+            catalog: str | None = None,
+            volumes: dict[str, str] | None = None,
+        ) -> None:
             """Instantiate and execute the writer."""
             def_obj = self._definition_type()
-            def_obj.root_path = root_path
+            def_obj.catalog = catalog
+            def_obj.volumes = volumes
 
             wrt_obj = self._writer()
             wrt_obj.write(df, def_obj, **self._kwargs)

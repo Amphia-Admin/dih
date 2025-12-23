@@ -37,10 +37,15 @@ class ReaderRegistry:
         def __hash__(self) -> int:
             return hash((self._definition_type, self._reader))
 
-        def read(self, root_path: str) -> AbstractReader:
+        def read(
+            self,
+            catalog: str | None = None,
+            volumes: dict[str, str] | None = None,
+        ) -> AbstractReader:
             """Instantiate and execute the reader."""
             def_obj = self._definition_type()
-            def_obj.root_path = root_path
+            def_obj.catalog = catalog
+            def_obj.volumes = volumes
 
             rdr_obj = self._reader()
             rdr_obj.read(def_obj)
