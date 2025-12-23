@@ -18,7 +18,7 @@ class LandedTableDefProducts(TableDefinition):
     def path(self) -> str:
         """Get path to products CSV file from lake volume."""
         lake_path = self.get_volume("lake")
-        return str(Path(lake_path) / "products.csv")
+        return str(Path(lake_path) / "raw/products/products.csv")
 
     @property
     def format(self) -> str:

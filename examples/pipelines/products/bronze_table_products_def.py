@@ -9,7 +9,7 @@ class BronzeTableDefProducts(TableDefinition, TargetTableDefMixin):
     Bronze layer for products data.
 
     Stores all ingested product data with minimal transformation.
-    Uses overwrite mode as products are typically a full snapshot.
+    Uses append mode for incremental updates.
     """
 
     @property
@@ -20,7 +20,7 @@ class BronzeTableDefProducts(TableDefinition, TargetTableDefMixin):
     @property
     def table_name(self) -> str:
         """Build fully qualified table name using injected catalog."""
-        return f"{self.catalog}.{LakeLayer.BRONZE.value}.products"
+        return f"{LakeLayer.BRONZE.value}.products"
 
     @property
     def path(self) -> str | None:
@@ -34,5 +34,5 @@ class BronzeTableDefProducts(TableDefinition, TargetTableDefMixin):
 
     @property
     def write_mode(self) -> str:
-        """Get write mode - overwrite for full snapshot."""
-        return "overwrite"
+        """Get write mode - append for incremental updates."""
+        return "append"

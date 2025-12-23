@@ -1,8 +1,10 @@
-"""Environment detection and initialization."""
+"""Environment detection and initialisation."""
 
 from __future__ import annotations
 
+import atexit
 import logging
+import logging.config
 from pathlib import Path
 from typing import Any
 
@@ -32,10 +34,10 @@ class ConfigLoadError(Exception):
 
 
 class Environment:
-    """Manages environment detection and initialization.
+    """Manages environment detection and initialisation.
 
     Auto-detects whether running locally or on Databricks, loads the
-    appropriate configuration section, and initializes Spark session
+    appropriate configuration section, and initialises Spark session
     and secrets.
 
     Parameters
@@ -49,13 +51,12 @@ class Environment:
     Basic usage:
 
         env = Environment("./env.config.yaml")
-        spark, catalog = env.initialize()
+        spark, catalog = env.initialise()
 
     With PipelineConfig:
 
         env = Environment()
         config = env.for_pipeline(
-            root_path=Path("./pipelines/orders"),
             metadata={"name": "orders", "version": "1.0"},
         )
         Runner(config=config, pipeline=MyPipeline).run()
@@ -67,7 +68,8 @@ class Environment:
         self._spark: SparkSession | None = None
         self._catalog: str | None = None
         self._volumes: dict[str, str] = {}
-        self._initialized = False
+        self._initialised = False
+        self._logging_initialised = False
 
     @property
     def mode(self) -> str:
@@ -144,10 +146,27 @@ class Environment:
         else:
             return RemoteSparkSessionBuilder().create_spark_session()
 
-    def initialize(self) -> tuple[SparkSession, str]:
-        """Initialize the environment.
+    def _setup_logging(self) -> None:
+        """Initialise logging from custom_logger config."""
+        if self._logging_initialised:
+            return
 
-        Detects mode, loads configuration, initializes secrets,
+        config_file = Path("custom_logger/config.yaml")
+        if config_file.exists():
+            config = yaml.safe_load(config_file.read_text())
+            logging.config.dictConfig(config)
+
+            queue_handler = logging.getHandlerByName("queue_handler")
+            if queue_handler is not None:
+                queue_handler.listener.start()
+                atexit.register(queue_handler.listener.stop)
+
+        self._logging_initialised = True
+        logger.info("Logging initialised")
+
+    def initialise(self) -> tuple[SparkSession, str]:
+        """Initialise the environment.
+        Detects mode, loads configuration, initialises logging, secrets,
         and creates/gets Spark session.
 
         Returns
@@ -155,8 +174,10 @@ class Environment:
         tuple[SparkSession, str]
             The Spark session and catalog name
         """
-        if self._initialized:
+        if self._initialised:
             return self._spark, self._catalog
+
+        self._setup_logging()
 
         yaml_data = self._load_yaml_config()
 
@@ -183,8 +204,8 @@ class Environment:
                 secrets = load_remote_secrets(self._spark, config.secret_scope)
                 inject_secrets_to_env(secrets)
 
-        self._initialized = True
-        logger.info(f"Initialized: mode={self.mode}, catalog={self._catalog}")
+        self._initialised = True
+        logger.info(f"Initialised: mode={self.mode}, catalog={self._catalog}")
 
         return self._spark, self._catalog
 
@@ -196,7 +217,7 @@ class Environment:
     ) -> PipelineConfig:
         """Create a PipelineConfig for running a pipeline.
 
-        Initializes the environment if not already done.
+        Initialises the environment if not already done.
 
         Parameters
         ----------
@@ -212,7 +233,7 @@ class Environment:
         PipelineConfig
             Configuration ready for the Runner
         """
-        spark, catalog = self.initialize()
+        spark, catalog = self.initialise()
 
         return PipelineConfig(
             spark=spark,

@@ -5,7 +5,7 @@ formatters:
     format: '[%(levelname)s|%(module)s|L%(lineno)d] %(asctime)s: %(message)s'
     datefmt: '%Y-%m-%dT%H:%M:%S%z'
   json:
-    (): json_formatter.JSONFormatter
+    (): custom_logger.json_formatter.JSONFormatter
     fmt_keys:
       level: levelname
       message: message
@@ -18,7 +18,7 @@ formatters:
 handlers:
   stderr:
     class: logging.StreamHandler
-    level: WARNING
+    level: INFO
     formatter: simple
     stream: ext://sys.stderr
   file_json:
@@ -26,7 +26,7 @@ handlers:
     level: DEBUG
     formatter: json
     filename: data/lake/logs/top.log.jsonl
-    maxBytes: 10000
+    maxBytes: 10000000
     backupCount: 3
   queue_handler:
     class: logging.handlers.QueueHandler
