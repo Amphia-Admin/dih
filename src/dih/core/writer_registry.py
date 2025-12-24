@@ -87,6 +87,7 @@ class WriterRegistry:
         if name not in registered_writer.aliases:
             registered_writer.aliases.append(name)
             self._alias_lookup[name] = registered_writer
+            logger.debug(f"Registered writer '{name}' -> {definition_type.__name__} for {transformation.__name__}")
 
     def register(
         self,
@@ -106,11 +107,17 @@ class WriterRegistry:
 
     def get_writers(self, transformation: type[Pipeline]) -> list[RegisteredWriter]:
         """Get all writers for a specific transformation."""
-        return [
+        writers = [
             writer
             for writer in self._registered_writers.values()
             if transformation in writer.transforms
         ]
+        if writers:
+            aliases = [w.aliases[0] for w in writers]
+            logger.debug(f"Found {len(writers)} writer(s) for {transformation.__name__}: {aliases}")
+        else:
+            logger.warning(f"No writers registered for pipeline: {transformation.__name__}")
+        return writers
 
 
 class register_writer:

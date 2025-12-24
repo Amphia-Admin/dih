@@ -20,6 +20,23 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _log_merge_metrics(delta_table: DeltaTable) -> None:
+    """Log merge operation metrics from Delta table history."""
+    try:
+        history = delta_table.history(1)
+        metrics_row = history.select("operationMetrics").collect()
+        if metrics_row and metrics_row[0][0]:
+            metrics = metrics_row[0][0]
+            inserted = metrics.get("numTargetRowsInserted", "N/A")
+            updated = metrics.get("numTargetRowsUpdated", "N/A")
+            deleted = metrics.get("numTargetRowsDeleted", "N/A")
+            matched = metrics.get("numTargetRowsMatchedOnly", metrics.get("numTargetRowsMatched", "N/A"))
+            source = metrics.get("numSourceRows", "N/A")
+            logger.info(f"Merge stats: source={source}, matched={matched}, inserted={inserted}, updated={updated}, deleted={deleted}")
+    except Exception as e:
+        logger.debug(f"Could not retrieve merge metrics: {e}")
+
+
 class DeltaMergeWriter(DeltaWriterBase):
     """
     Delta writer that performs merge operations using business keys.
@@ -144,6 +161,7 @@ class DeltaMergeWriter(DeltaWriterBase):
         # Execute merge
         logger.info("Executing merge operation")
         merge_builder.execute()
+        _log_merge_metrics(target_delta_table)
         logger.info("Merge operation completed successfully")
 
     def _merge_managed(
@@ -248,4 +266,5 @@ class DeltaMergeWriter(DeltaWriterBase):
 
         logger.info("Executing merge operation on managed table")
         merge_builder.execute()
+        _log_merge_metrics(target_delta_table)
         logger.info("Merge operation on managed table completed successfully")

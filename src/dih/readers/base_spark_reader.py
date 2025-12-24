@@ -51,6 +51,10 @@ class SparkDataFrameReader(AbstractReader):
             raise ValueError(msg)
 
         logger.info(f"Reading {file_format} from {path}")
+        if options:
+            logger.debug(f"Read options: {options}")
+        if schema:
+            logger.debug(f"Using explicit schema with {len(schema.fields)} fields")
 
         reader = spark.read.format(file_format)
 
@@ -61,6 +65,7 @@ class SparkDataFrameReader(AbstractReader):
             reader = reader.options(**options)
 
         self._data = reader.load(path)
+        logger.debug(f"Schema: {[f'{f.name}:{f.dataType.simpleString()}' for f in self._data.schema.fields]}")
         return self._data
 
     @property

@@ -86,6 +86,7 @@ class ReaderRegistry:
         if name not in registered_reader.aliases:
             registered_reader.aliases.append(name)
             self._alias_lookup[name] = registered_reader
+            logger.debug(f"Registered reader '{name}' -> {definition_type.__name__} for {transformation.__name__}")
 
     def register(
         self,
@@ -105,11 +106,17 @@ class ReaderRegistry:
 
     def get_readers(self, pipeline: type[Pipeline]) -> list[RegisteredReader]:
         """Get all readers for a specific pipeline."""
-        return [
+        readers = [
             reader
             for reader in self._registered_readers.values()
             if pipeline in reader.transforms
         ]
+        if readers:
+            aliases = [r.aliases[0] for r in readers]
+            logger.debug(f"Found {len(readers)} reader(s) for {pipeline.__name__}: {aliases}")
+        else:
+            logger.warning(f"No readers registered for pipeline: {pipeline.__name__}")
+        return readers
 
 
 class register_reader:

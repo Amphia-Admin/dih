@@ -11,7 +11,6 @@ from examples.pipelines.products.landed_to_bronze_products_pipeline import (
 from loadcore.environment import Environment
 from src.dih.core.runner import Runner
 
-# Initialize environment (auto-detects local vs remote)
 env = Environment("./env.config.yaml")
 
 # Create pipeline config

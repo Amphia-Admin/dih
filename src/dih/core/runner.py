@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import TYPE_CHECKING
+
+from pyspark.sql import DataFrame
 
 from src.dih.core.reader_registry import ReaderRegistry
 from src.dih.core.writer_registry import WriterRegistry
@@ -66,6 +69,7 @@ class Runner:
 
     def run(self) -> None:
         """Execute the complete pipeline lifecycle."""
+        pipeline_start = time.perf_counter()
         logger.info("Starting pipeline execution")
         try:
             self._apply_spark_config()
@@ -74,10 +78,22 @@ class Runner:
             self._inject_metadata()
             self._execute_pipeline()
             self._load_outputs()
-            logger.info("Pipeline execution completed successfully")
+
+            total_duration = time.perf_counter() - pipeline_start
+            logger.info(f"Pipeline execution completed successfully in {total_duration:.2f}s")
         except Exception:
-            logger.exception("Pipeline execution failed")
+            total_duration = time.perf_counter() - pipeline_start
+            logger.exception(f"Pipeline execution failed after {total_duration:.2f}s")
             raise
+
+    def _describe_df(self, df: DataFrame) -> str:
+        """Return a concise description of a DataFrame."""
+        row_count = df.count()
+        col_count = len(df.columns)
+        columns = ", ".join(df.columns[:5])
+        if len(df.columns) > 5:
+            columns += f", ... (+{len(df.columns) - 5} more)"
+        return f"{row_count:,} rows x {col_count} cols [{columns}]"
 
     def _apply_spark_config(self) -> None:
         """Apply runtime Spark configuration overrides."""
@@ -89,8 +105,8 @@ class Runner:
             logger.debug(f"Set Spark config: {key}={value}")
 
     def _initialize_pipeline(self) -> None:
-        """Instantiate pipeline and initialize registries."""
-        logger.info("Initializing pipeline")
+        """Instantiate pipeline and initialise registries."""
+        logger.info("Initialising pipeline")
 
         # Load pipeline class
         pipeline_class = DynamicLoader.load_pipeline(self._pipeline_ref)
@@ -114,20 +130,28 @@ class Runner:
             msg = "Pipeline or registry not initialized"
             raise RuntimeError(msg)
 
+        extract_start = time.perf_counter()
         logger.info("Extracting input data")
 
         readers = self._reader_registry.get_readers(type(self._pipeline))
         logger.debug(f"Found {len(readers)} registered reader(s)")
 
+        total_rows = 0
         for registered_reader in readers:
             alias = registered_reader.aliases[0]
-            logger.debug(f"Reading input: {alias}")
+            read_start = time.perf_counter()
 
             reader = registered_reader.read(catalog=self._catalog, volumes=self._volumes)
-            self._pipeline.inputs[alias] = reader.data
-            logger.debug(f"Loaded input '{alias}' with {reader.data.count()} rows")
+            df = reader.data
+            self._pipeline.inputs[alias] = df
 
-        logger.info(f"Loaded {len(self._pipeline.inputs)} input(s)")
+            read_duration = time.perf_counter() - read_start
+            df_desc = self._describe_df(df)
+            total_rows += df.count()
+            logger.info(f"Read '{alias}': {df_desc} in {read_duration:.2f}s")
+
+        extract_duration = time.perf_counter() - extract_start
+        logger.info(f"Extraction complete: {len(self._pipeline.inputs)} input(s), {total_rows:,} total rows in {extract_duration:.2f}s")
 
     def _inject_metadata(self) -> None:
         """Inject metadata into pipeline."""
@@ -144,9 +168,15 @@ class Runner:
             msg = "Pipeline not initialized"
             raise RuntimeError(msg)
 
-        logger.info("Executing pipeline")
+        process_start = time.perf_counter()
+        pipeline_name = type(self._pipeline).__name__
+        logger.info(f"Executing pipeline: {pipeline_name}")
+
         self._pipeline.process()
-        logger.info(f"Generated {len(self._pipeline.outputs)} output(s)")
+
+        process_duration = time.perf_counter() - process_start
+        output_count = len(self._pipeline.outputs)
+        logger.info(f"Pipeline '{pipeline_name}' generated {output_count} output(s) in {process_duration:.2f}s")
 
     def _load_outputs(self) -> None:
         """Write output data via registered writers."""
@@ -154,26 +184,34 @@ class Runner:
             msg = "Pipeline or registry not initialized"
             raise RuntimeError(msg)
 
+        load_start = time.perf_counter()
         logger.info("Loading output data")
 
         writers = self._writer_registry.get_writers(type(self._pipeline))
         logger.debug(f"Found {len(writers)} registered writer(s)")
 
         outputs = self._pipeline.outputs.results
+        total_rows = 0
+        written_count = 0
 
         for output_name, output_df in outputs.items():
-            logger.debug(f"Writing output: {output_name}")
+            write_start = time.perf_counter()
 
             matched = False
             for registered_writer in writers:
                 if output_name in registered_writer.aliases:
                     registered_writer.write(output_df, catalog=self._catalog, volumes=self._volumes)
                     matched = True
-                    row_count = output_df.count()
-                    logger.debug(f"Wrote output '{output_name}' with {row_count} rows")
+                    written_count += 1
+
+                    write_duration = time.perf_counter() - write_start
+                    df_desc = self._describe_df(output_df)
+                    total_rows += output_df.count()
+                    logger.info(f"Wrote '{output_name}': {df_desc} in {write_duration:.2f}s")
                     break
 
             if not matched:
                 logger.warning(f"No writer registered for output: {output_name}")
 
-        logger.info("Output data loaded successfully")
+        load_duration = time.perf_counter() - load_start
+        logger.info(f"Load complete: {written_count} output(s), {total_rows:,} total rows in {load_duration:.2f}s")
