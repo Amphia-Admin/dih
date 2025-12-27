@@ -23,7 +23,7 @@ handlers:
     stream: ext://sys.stderr
   file_json:
     class: logging.handlers.RotatingFileHandler
-    level: DEBUG
+    level: INFO
     formatter: json
     filename: data/lake/logs/top.log.jsonl
     maxBytes: 10000000

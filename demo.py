@@ -1,13 +1,6 @@
-#!/usr/bin/env python
-"""Run the products pipeline.
+"""Run the products pipeline."""
 
-This script demonstrates a complete medallion architecture pipeline
-for products data using the DIH framework with loadcore integration.
-"""
-
-from examples.pipelines.products.landed_to_bronze_products_pipeline import (
-    LandedToBronzeProductsPipeline,
-)
+from pipelines.bronze.pipelines.bronze_products_pipeline import BronzeProductsPipeline
 from loadcore.environment import Environment
 from src.dih.core.runner import Runner
 
@@ -27,5 +20,5 @@ config = env.for_pipeline(
 )
 
 # Run the pipeline
-runner = Runner(config=config, pipeline=LandedToBronzeProductsPipeline)
+runner = Runner(config=config, pipeline=BronzeProductsPipeline)
 runner.run()
