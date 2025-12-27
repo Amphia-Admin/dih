@@ -7,9 +7,11 @@ from src.dih.core.reader_registry import register_reader
 from src.dih.core.writer_registry import register_writer
 from src.dih.readers.base_spark_reader import SparkDataFrameReader
 from src.dih.writers.base_spark_writer import SparkDataFrameWriter
+from src.dih.transforms.apply_schema import apply_schema
 
 from pipelines.landed.definitions.landed_products_def import LandedProductsDef
 from pipelines.bronze.definitions.bronze_products_def import BronzeProductsDef
+from pipelines.bronze.schemas.bronze_products_schema import BRONZE_PRODUCTS_SCHEMA
 
 
 @pipeline_definition(name="BronzeProductsPipeline")
@@ -31,4 +33,5 @@ class BronzeProductsPipeline(Pipeline):
             .withColumn("source_file", F.input_file_name())
         )
 
-        self.outputs.add("bronze_products", df_with_metadata)
+        df_final = apply_schema(df_with_metadata, BRONZE_PRODUCTS_SCHEMA)
+        self.outputs.add("bronze_products", df_final)

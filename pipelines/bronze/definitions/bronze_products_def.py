@@ -34,5 +34,5 @@ class BronzeProductsDef(TableDefinition, TargetTableDefMixin):
 
     @property
     def write_mode(self) -> str:
-        """Get write mode - append for incremental updates."""
-        return "append"
+        """Get write mode."""
+        return "overwrite"
