@@ -14,7 +14,7 @@ class LocalEnvironmentConfig:
     """Configuration for local development environment."""
 
     catalog: str
-    warehouse_path: str = "./data/catalog"
+    warehouse_path: str
     volumes: dict[str, str] = field(default_factory=dict)
     secrets_path: str | None = None
 

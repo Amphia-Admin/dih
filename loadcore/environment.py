@@ -5,6 +5,7 @@ from __future__ import annotations
 import atexit
 import logging
 import logging.config
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,8 @@ from loadcore.secrets import (
     load_remote_secrets,
 )
 from loadcore.spark_manager import LocalSparkSessionBuilder, RemoteSparkSessionBuilder
+
+from custom_logger.delta_handler import DeltaLogHandler
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +125,7 @@ class Environment:
         local = data.get("local", {})
         return LocalEnvironmentConfig(
             catalog=local.get("catalog", "spark_catalog"),
-            warehouse_path=local.get("warehouse_path", "./data/catalog"),
+            warehouse_path=local.get("warehouse_path"),
             volumes=local.get("volumes", {}),
             secrets_path=local.get("secrets_path"),
         )
@@ -141,12 +144,12 @@ class Environment:
         if self.is_local:
             return LocalSparkSessionBuilder(
                 app_name="dih",
-                warehouse_path=warehouse_path or "./data/catalog",
+                warehouse_path=warehouse_path,
             ).create_spark_session()
         else:
             return RemoteSparkSessionBuilder().create_spark_session()
 
-    def _setup_logging(self) -> None:
+    def _setup_logging(self, log_base_path: str | None = None) -> None:
         """Initialise logging from custom_logger config."""
         if self._logging_initialised:
             return
@@ -154,6 +157,19 @@ class Environment:
         config_file = Path("custom_logger/config.yaml")
         if config_file.exists():
             config = yaml.safe_load(config_file.read_text())
+
+            # Replace filename with timestamped version using volume path
+            if "handlers" in config and "file_json" in config["handlers"]:
+                timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+                if not log_base_path:
+                    msg = "log_base_path is required for file logging"
+                    raise ValueError(msg)
+                log_dir = Path(log_base_path) / "logs"
+                log_dir.mkdir(parents=True, exist_ok=True)
+                config["handlers"]["file_json"]["filename"] = str(
+                    log_dir / f"app_{timestamp}.log.jsonl"
+                )
+
             logging.config.dictConfig(config)
 
             queue_handler = logging.getHandlerByName("queue_handler")
@@ -164,8 +180,26 @@ class Environment:
         self._logging_initialised = True
         logger.info("Logging initialised")
 
+    def _setup_delta_logging(self, log_table: str) -> None:
+        """Add Delta table handler to root logger."""
+        if self._spark is None:
+            return
+
+        delta_handler = DeltaLogHandler(
+            spark=self._spark,
+            table_name=log_table,
+            buffer_size=50,
+            flush_interval=30.0,
+        )
+        delta_handler.setLevel(logging.INFO)
+
+        root_logger = logging.getLogger()
+        root_logger.addHandler(delta_handler)
+        logger.info(f"Delta logging enabled: {log_table}")
+
     def initialise(self) -> tuple[SparkSession, str]:
         """Initialise the environment.
+
         Detects mode, loads configuration, initialises logging, secrets,
         and creates/gets Spark session.
 
@@ -177,8 +211,7 @@ class Environment:
         if self._initialised:
             return self._spark, self._catalog
 
-        self._setup_logging()
-
+        # Load config first to get volumes for logging
         yaml_data = self._load_yaml_config()
 
         if self.is_local:
@@ -186,23 +219,32 @@ class Environment:
             self._catalog = config.catalog
             self._volumes = config.volumes
 
+            # Setup logging with volume path
+            self._setup_logging(self._volumes.get("lake"))
+
             if config.secrets_path:
                 secrets_path = self._config_path.parent / config.secrets_path
                 secrets = load_local_secrets(secrets_path)
                 inject_secrets_to_env(secrets)
 
             self._spark = self._create_spark_session(config.warehouse_path)
+            self._setup_delta_logging(f"{self._catalog}.logs.app_logs")
 
         else:
             config = self._get_remote_config(yaml_data)
             self._catalog = config.catalog
             self._volumes = config.volumes
 
+            # Setup logging with volume path
+            self._setup_logging(self._volumes.get("lake"))
+
             self._spark = self._create_spark_session()
 
             if config.secret_scope:
                 secrets = load_remote_secrets(self._spark, config.secret_scope)
                 inject_secrets_to_env(secrets)
+
+            self._setup_delta_logging(f"{self._catalog}.logs.app_logs")
 
         self._initialised = True
         logger.info(f"Initialised: mode={self.mode}, catalog={self._catalog}")
