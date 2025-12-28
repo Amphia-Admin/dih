@@ -1,5 +1,5 @@
 ## -----------------------------
-# Project: DIH Ingestion
+# Project: ih Ingestion
 # Docker: ARM setup
 # Author: 
 ## -----------------------------
@@ -33,10 +33,10 @@ RUN export PATH="$HOME/.local/bin:$PATH"
 RUN pip install --upgrade pip
 
 # Set working directory
-WORKDIR /workspace/dih-ingestion
-RUN export PYTHONPATH="/workspace/dih-ingestion/:$PYTHONPATH"
+WORKDIR /workspace/ih-ingestion
+RUN export PYTHONPATH="/workspace/ih-ingestion/:$PYTHONPATH"
 
-COPY requirements.txt /workspace/dih-ingestion
+COPY requirements.txt /workspace/ih-ingestion
 
 # install python dependencies
 RUN pip install --upgrade pip \

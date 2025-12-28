@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "dih"
+name = "ih"
 version = "0.1.0"
-description = "DIH Ingestion Module"
+description = "IH Ingestion Module"
 requires-python = ">=3.14.2"
 dependencies = [
     "pyspark>=3.5.0",
@@ -160,7 +160,7 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = [
-    "--cov=dih",
+    "--cov=src",
     "--cov-report=term-missing",
     "--cov-report=html",
     "-v",
@@ -170,7 +170,7 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
-source = ["src/dih"]
+source = ["src"]
 omit = ["tests/*", "*/test_*.py"]
 
 [tool.coverage.report]

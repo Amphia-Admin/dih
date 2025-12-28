@@ -52,8 +52,8 @@ jobs:
 
       - name: Lint with ruff
         run: |
-          ruff check src/dih tests
-          ruff format --check src/dih tests
+          ruff check src tests
+          ruff format --check src tests
 
       - name: Type check with mypy
-        run: mypy src/dih
+        run: mypy src

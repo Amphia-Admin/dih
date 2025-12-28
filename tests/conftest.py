@@ -14,7 +14,7 @@ def spark_session() -> SparkSession:
 
     # Create new session with Delta
     builder = (
-        SparkSession.builder.appName("DIH-Tests")
+        SparkSession.builder.appName("ih-Tests")
         .master("local[*]")
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
         .config(

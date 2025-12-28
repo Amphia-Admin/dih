@@ -1,4 +1,4 @@
-"""Core interface definitions for DIH framework."""
+"""Core interface definitions for ih framework."""
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any

@@ -1,4 +1,4 @@
-# Repository:   dih-ingestion
+# Repository:   ih-ingestion
 # Path:         .docker/requirements.txt
 
 mypy

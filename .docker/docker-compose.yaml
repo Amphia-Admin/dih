@@ -1,17 +1,17 @@
-name: dih-ingestion-containers
+name: ih-ingestion-containers
 
 services:
   app:
-    container_name: dih-ingestion-container
-    build: 
+    container_name: ih-ingestion-container
+    build:
       context: .
       dockerfile: Dockerfile
-    image: dih-ingestion
+    image: ih-ingestion
     privileged: true
     init: true
     tty: true
     volumes:
-      - ../:/workspace/dih-ingestion
+      - ../:/workspace/ih-ingestion
     ports:
       - 4042:4040
     restart: unless-stopped

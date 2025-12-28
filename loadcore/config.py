@@ -30,7 +30,7 @@ class RemoteEnvironmentConfig:
 
 @dataclass
 class PipelineConfig:
-    """Configuration for running a DIH pipeline.
+    """Configuration for running a ih pipeline.
 
     This is provided by the user at runtime for each pipeline execution.
     """

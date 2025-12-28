@@ -1,1 +1,1 @@
-"""Test package for DIH framework."""
+"""Test package for ih framework."""

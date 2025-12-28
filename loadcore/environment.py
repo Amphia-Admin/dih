@@ -143,7 +143,7 @@ class Environment:
         """Create or get Spark session based on mode."""
         if self.is_local:
             return LocalSparkSessionBuilder(
-                app_name="dih",
+                app_name="ih",
                 warehouse_path=warehouse_path,
             ).create_spark_session()
         else:

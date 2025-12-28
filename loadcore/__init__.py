@@ -1,1 +1,1 @@
-"""Loadcore - Environment and configuration management for DIH pipelines."""
+"""Loadcore - Environment and configuration management for ih pipelines."""

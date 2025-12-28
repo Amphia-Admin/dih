@@ -1,1 +1,1 @@
-"""DIH - Data Ingestion Hub ETL Framework."""
+"""ih - Data Ingestion Hub ETL Framework."""
