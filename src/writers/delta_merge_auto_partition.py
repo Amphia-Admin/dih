@@ -1,13 +1,14 @@
-"""Delta merge writer using business keys."""
+"""Delta merge writer with automatic partition locking."""
 
 import logging
 from typing import TYPE_CHECKING, Any
 
 from delta.tables import DeltaTable
 
-from src.dih.core.table_interfaces import TableDefinition, TargetTableDefMixin
-from src.dih.writers.delta_writer_base import DeltaWriterBase
-from src.dih.writers.utils import (
+from src.core.table_interfaces import TableDefinition, TargetTableDefMixin
+from src.writers.delta_writer_base import DeltaWriterBase
+from src.writers.utils import (
+    build_auto_partition_predicate,
     build_column_mapping,
     build_merge_condition,
     get_merge_options,
@@ -20,29 +21,15 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _log_merge_metrics(delta_table: DeltaTable) -> None:
-    """Log merge operation metrics from Delta table history."""
-    try:
-        history = delta_table.history(1)
-        metrics_row = history.select("operationMetrics").collect()
-        if metrics_row and metrics_row[0][0]:
-            metrics = metrics_row[0][0]
-            inserted = metrics.get("numTargetRowsInserted", "N/A")
-            updated = metrics.get("numTargetRowsUpdated", "N/A")
-            deleted = metrics.get("numTargetRowsDeleted", "N/A")
-            matched = metrics.get("numTargetRowsMatchedOnly", metrics.get("numTargetRowsMatched", "N/A"))
-            source = metrics.get("numSourceRows", "N/A")
-            logger.info(f"Merge stats: source={source}, matched={matched}, inserted={inserted}, updated={updated}, deleted={deleted}")
-    except Exception as e:
-        logger.debug(f"Could not retrieve merge metrics: {e}")
-
-
-class DeltaMergeWriter(DeltaWriterBase):
+class DeltaMergeAutoPartitionWriter(DeltaWriterBase):
     """
-    Delta writer that performs merge operations using business keys.
+    Delta writer with merge and automatic partition locking.
 
-    Merges data based on primary_keys from TableDefinition.
-    Supports conditional updates, deletes, and custom column specifications.
+    Combines business key merging with auto-generated partition predicates
+    to improve performance by scanning only relevant partitions.
+
+    Automatically detects partition values from source DataFrame and
+    generates partition lock predicates.
     """
 
     def _merge(
@@ -54,7 +41,7 @@ class DeltaMergeWriter(DeltaWriterBase):
         **kwargs: Any,
     ) -> None:
         """
-        Perform merge operation using business keys.
+        Perform merge operation with automatic partition locking.
 
         Parameters
         ----------
@@ -72,9 +59,9 @@ class DeltaMergeWriter(DeltaWriterBase):
         Raises
         ------
         ValueError
-            If primary_keys are not defined
+            If primary_keys or partition_by are not defined
         """
-        # Validate primary keys exist
+        # Validate requirements
         if not isinstance(output_def, TargetTableDefMixin):
             msg = "Output definition must implement TargetTableDefMixin for merge operations"
             raise TypeError(msg)
@@ -87,16 +74,31 @@ class DeltaMergeWriter(DeltaWriterBase):
             )
             raise ValueError(msg)
 
+        partition_columns = output_def.partition_by
+        if not partition_columns:
+            msg = (
+                "partition_by must be defined in TableDefinition for auto partition merge. "
+                "Set the partition_by property to a list of partition column names."
+            )
+            raise ValueError(msg)
+
         logger.info(f"Performing merge with primary keys: {primary_keys}")
+        logger.info(f"Auto-locking partitions: {partition_columns}")
 
         # Extract merge options with defaults
         merge_opts = get_merge_options(output_def)
         source_alias = merge_opts["source_alias"]
         target_alias = merge_opts["target_alias"]
 
-        # Build merge condition from primary keys
-        merge_condition = build_merge_condition(primary_keys, source_alias, target_alias)
-        logger.debug(f"Merge condition: {merge_condition}")
+        # Build business key merge condition
+        business_key_condition = build_merge_condition(primary_keys, source_alias, target_alias)
+
+        # Build partition lock predicate from DataFrame
+        partition_predicate = build_auto_partition_predicate(df, partition_columns, target_alias)
+
+        # Combine business keys and partition predicates
+        merge_condition = f"{business_key_condition} and {partition_predicate}"
+        logger.info(f"Combined merge condition: {merge_condition}")
 
         # Get all columns from source DataFrame
         all_columns = df.columns
@@ -159,9 +161,8 @@ class DeltaMergeWriter(DeltaWriterBase):
             merge_builder = merge_builder.whenMatchedDelete(condition=when_matched_delete_condition)
 
         # Execute merge
-        logger.info("Executing merge operation")
+        logger.info("Executing merge operation with partition locking")
         merge_builder.execute()
-        _log_merge_metrics(target_delta_table)
         logger.info("Merge operation completed successfully")
 
     def _merge_managed(
@@ -173,7 +174,7 @@ class DeltaMergeWriter(DeltaWriterBase):
         **kwargs: Any,
     ) -> None:
         """
-        Perform merge operation on managed Delta table using business keys.
+        Perform merge operation on managed table with automatic partition locking.
 
         Parameters
         ----------
@@ -191,7 +192,7 @@ class DeltaMergeWriter(DeltaWriterBase):
         Raises
         ------
         ValueError
-            If primary_keys are not defined
+            If primary_keys or partition_by are not defined
         """
         if not isinstance(output_def, TargetTableDefMixin):
             msg = "Output definition must implement TargetTableDefMixin for merge operations"
@@ -205,14 +206,25 @@ class DeltaMergeWriter(DeltaWriterBase):
             )
             raise ValueError(msg)
 
+        partition_columns = output_def.partition_by
+        if not partition_columns:
+            msg = (
+                "partition_by must be defined in TableDefinition for auto partition merge. "
+                "Set the partition_by property to a list of partition column names."
+            )
+            raise ValueError(msg)
+
         logger.info(f"Performing merge on managed table with primary keys: {primary_keys}")
+        logger.info(f"Auto-locking partitions: {partition_columns}")
 
         merge_opts = get_merge_options(output_def)
         source_alias = merge_opts["source_alias"]
         target_alias = merge_opts["target_alias"]
 
-        merge_condition = build_merge_condition(primary_keys, source_alias, target_alias)
-        logger.debug(f"Merge condition: {merge_condition}")
+        business_key_condition = build_merge_condition(primary_keys, source_alias, target_alias)
+        partition_predicate = build_auto_partition_predicate(df, partition_columns, target_alias)
+        merge_condition = f"{business_key_condition} and {partition_predicate}"
+        logger.info(f"Combined merge condition: {merge_condition}")
 
         all_columns = df.columns
 
@@ -234,7 +246,7 @@ class DeltaMergeWriter(DeltaWriterBase):
             logger.info(f"Setting broadcast threshold: {broadcast_threshold}")
             spark.conf.set("spark.sql.autoBroadcastJoinThreshold", str(broadcast_threshold))
 
-        # Load managed Delta table by name instead of path
+        # Load managed Delta table by name
         target_delta_table = DeltaTable.forName(spark, table_name)
 
         merge_builder = target_delta_table.alias(target_alias).merge(
@@ -264,7 +276,6 @@ class DeltaMergeWriter(DeltaWriterBase):
             logger.info(f"Adding delete condition: {when_matched_delete_condition}")
             merge_builder = merge_builder.whenMatchedDelete(condition=when_matched_delete_condition)
 
-        logger.info("Executing merge operation on managed table")
+        logger.info("Executing merge operation on managed table with partition locking")
         merge_builder.execute()
-        _log_merge_metrics(target_delta_table)
         logger.info("Merge operation on managed table completed successfully")

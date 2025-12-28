@@ -2,12 +2,12 @@
 
 from pyspark.sql import functions as F
 
-from src.dih.core.pipeline import Pipeline, pipeline_definition
-from src.dih.core.reader_registry import register_reader
-from src.dih.core.writer_registry import register_writer
-from src.dih.readers.base_spark_reader import SparkDataFrameReader
-from src.dih.writers.base_spark_writer import SparkDataFrameWriter
-from src.dih.transforms.apply_schema import apply_schema
+from src.core.pipeline import Pipeline, pipeline_definition
+from src.core.reader_registry import register_reader
+from src.core.writer_registry import register_writer
+from src.readers.base_spark_reader import SparkDataFrameReader
+from src.writers.base_spark_writer import SparkDataFrameWriter
+from src.transforms.apply_schema import apply_schema
 
 from pipelines.landed.definitions.landed_products_def import LandedProductsDef
 from pipelines.bronze.definitions.bronze_products_def import BronzeProductsDef

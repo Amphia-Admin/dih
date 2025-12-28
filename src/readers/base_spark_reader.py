@@ -6,7 +6,7 @@ from pyspark.sql import DataFrame, SparkSession
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from src.dih.core.table_interfaces import TableDefinition
+    from src.core.table_interfaces import TableDefinition
 
 logger = logging.getLogger(__name__)
 

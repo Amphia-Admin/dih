@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from pyspark.sql import SparkSession
 
-from src.dih.core.table_interfaces import TableDefinition, TargetTableDefMixin
+from src.core.table_interfaces import TableDefinition, TargetTableDefMixin
 
 if TYPE_CHECKING:
     from pyspark.sql import DataFrame

@@ -4,7 +4,7 @@ import importlib
 import logging
 from typing import Any
 
-from src.dih.core.pipeline import Pipeline
+from src.core.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 

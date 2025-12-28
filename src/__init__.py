@@ -1,1 +1,1 @@
-"""Source package."""
+"""DIH - Data Ingestion Hub ETL Framework."""

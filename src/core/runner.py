@@ -8,13 +8,13 @@ from typing import TYPE_CHECKING
 
 from pyspark.sql import DataFrame
 
-from src.dih.core.reader_registry import ReaderRegistry
-from src.dih.core.writer_registry import WriterRegistry
-from src.dih.utils.loader import DynamicLoader
+from src.core.reader_registry import ReaderRegistry
+from src.core.writer_registry import WriterRegistry
+from src.utils.loader import DynamicLoader
 
 if TYPE_CHECKING:
     from loadcore import PipelineConfig
-    from src.dih.core.pipeline import Pipeline
+    from src.core.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +31,6 @@ class Runner:
 
     Examples
     --------
-        from loadcore import Environment
-        from dih import Runner
-
         env = Environment("./env.config.yaml")
         config = env.for_pipeline()
 
@@ -46,7 +43,7 @@ class Runner:
         config: PipelineConfig,
         pipeline: str | type[Pipeline],
     ) -> None:
-        """Initialize the runner.
+        """Initialise the runner.
 
         Parameters
         ----------

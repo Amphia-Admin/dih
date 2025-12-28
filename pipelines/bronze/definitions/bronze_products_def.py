@@ -1,7 +1,7 @@
 """Bronze layer table definition for products."""
 
-from src.dih.constants import FileFormat, LakeLayer
-from src.dih.core.table_interfaces import TableDefinition, TargetTableDefMixin
+from src.constants import FileFormat, LakeLayer
+from src.core.table_interfaces import TableDefinition, TargetTableDefMixin
 
 
 class BronzeProductsDef(TableDefinition, TargetTableDefMixin):

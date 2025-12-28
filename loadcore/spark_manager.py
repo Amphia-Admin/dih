@@ -57,7 +57,7 @@ class LocalSparkSessionBuilder(AbstractSessionBuilder):
             )
             .config("spark.databricks.delta.optimizeWrite.enabled", "true")
             .config("spark.databricks.delta.autoCompact.enabled", "true")
-            .config("spark.sql.execution.arrow.enabled", "true")
+            .config("spark.sql.execution.arrow.pyspark.enabled", "true")
             .enableHiveSupport()
         )
 

@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, Any
 
 from delta.tables import DeltaTable
 
-from src.dih.core.table_interfaces import TableDefinition, TargetTableDefMixin
-from src.dih.writers.base_spark_writer import AbstractWriter
+from src.core.table_interfaces import TableDefinition, TargetTableDefMixin
+from src.writers.base_spark_writer import AbstractWriter
 if TYPE_CHECKING:
     from pyspark.sql import DataFrame, SparkSession
 

@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from pyspark.sql import DataFrame
 
-    from src.dih.core.table_interfaces import TableDefinition
-    from src.dih.writers.base_spark_writer import AbstractWriter
-    from src.dih.core.pipeline import Pipeline
+    from src.core.table_interfaces import TableDefinition
+    from src.writers.base_spark_writer import AbstractWriter
+    from src.core.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 

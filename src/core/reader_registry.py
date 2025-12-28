@@ -4,9 +4,9 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from src.dih.core.table_interfaces import TableDefinition
-    from src.dih.readers.base_spark_reader import AbstractReader
-    from src.dih.core.pipeline import Pipeline
+    from src.core.table_interfaces import TableDefinition
+    from src.readers.base_spark_reader import AbstractReader
+    from src.core.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 

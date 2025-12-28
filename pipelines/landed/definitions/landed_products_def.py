@@ -3,8 +3,8 @@
 from pathlib import Path
 from typing import Any
 
-from src.dih.core.table_interfaces import TableDefinition
-from src.dih.constants import FileFormat
+from src.core.table_interfaces import TableDefinition
+from src.constants import FileFormat
 
 
 class LandedProductsDef(TableDefinition):

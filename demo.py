@@ -2,7 +2,7 @@
 
 from pipelines.bronze.pipelines.bronze_products_pipeline import BronzeProductsPipeline
 from loadcore.environment import Environment
-from src.dih.core.runner import Runner
+from src.core.runner import Runner
 
 env = Environment("./env.config.yaml")
 

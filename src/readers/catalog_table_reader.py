@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 
 from pyspark.sql import DataFrame, SparkSession
 
-from src.dih.readers.base_spark_reader import AbstractReader
+from src.readers.base_spark_reader import AbstractReader
 
 if TYPE_CHECKING:
-    from src.dih.core.table_interfaces import TableDefinition
+    from src.core.table_interfaces import TableDefinition
 
 logger = logging.getLogger(__name__)
 

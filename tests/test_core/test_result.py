@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from src.dih.core.result import ProcessingResult
+from src.core.result import ProcessingResult
 
 if TYPE_CHECKING:
     from pyspark.sql import SparkSession

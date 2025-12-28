@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
-from src.dih.core.result import ProcessingResult
+from src.core.result import ProcessingResult
 
 if TYPE_CHECKING:
     from pyspark.sql import DataFrame
