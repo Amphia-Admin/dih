@@ -15,7 +15,6 @@ class LocalEnvironmentConfig:
 
     catalog: str
     volumes: dict[str, str] = field(default_factory=dict)
-    secrets_path: str | None = None
 
 
 @dataclass(frozen=True)

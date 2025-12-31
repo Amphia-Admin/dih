@@ -28,7 +28,6 @@ The `env.config.yaml` file defines environment-specific settings:
 # env.config.yaml
 local:
   catalog: "spark_catalog"
-  secrets_path: "./secrets.yaml"
   volumes:
     lake: "./data/lake"
     catalog: "./data/catalog"
@@ -46,7 +45,6 @@ remote:
 | Property | Environment | Description |
 |----------|-------------|-------------|
 | `catalog` | Both | Spark/Unity Catalog name |
-| `secrets_path` | Local | Path to local secrets YAML |
 | `secret_scope` | Remote | Databricks secret scope name |
 | `volumes` | Both | Named volume path mappings |
 | `volumes.lake` | Both | Path to raw files and landed data |
@@ -108,7 +106,6 @@ Dataclasses for type-safe configuration management.
 class LocalEnvironmentConfig:
     catalog: str             # Spark catalog name (e.g., "spark_catalog")
     volumes: dict[str, str]  # Volume name to path mappings
-    secrets_path: str        # Path to secrets.yaml
 ```
 
 **RemoteEnvironmentConfig:**
@@ -132,58 +129,82 @@ class PipelineConfig:
     spark_conf: dict[str, str]  # Spark configuration overrides
 ```
 
-### 3. Secrets (`secrets.py`)
+### 3. Secrets
 
-Secure secret management for both local development and Databricks.
+Secrets are managed differently in local and remote environments.
 
-**Secret Dataclass:**
-```python
-@dataclass
-class Secret:
-    key: str
-    value: str
+#### Local Development
 
-    def __repr__(self) -> str:
-        return f"Secret(key='{self.key}', value='***')"
+For local development, use a `.env` file in the project root. Docker automatically loads this file into the container's environment variables.
+
+**Location:**
+```
+ih-ingestion/
+├── .env              # Your secrets file (git-ignored)
+├── .env.example      # Template for required secrets (committed)
+├── env.config.yaml
+└── ...
 ```
 
-**Local Secrets (`secrets.yaml`):**
+**Create your `.env` file:**
+```bash
+# .env
+SQL_SERVER_HOST=myserver.database.windows.net
+SQL_SERVER_PASSWORD=my-secret-password
+STORAGE_ACCOUNT_KEY=abc123...
+API_KEY=xyz789...
+```
+
+**Create a `.env.example` template** (safe to commit):
+```bash
+# .env.example - Copy to .env and fill in values
+SQL_SERVER_HOST=
+SQL_SERVER_PASSWORD=
+STORAGE_ACCOUNT_KEY=
+API_KEY=
+```
+
+**Access secrets in your code:**
+```python
+import os
+
+# Secrets are available as environment variables
+db_host = os.environ["SQL_SERVER_HOST"]
+db_password = os.environ["SQL_SERVER_PASSWORD"]
+```
+
+#### Remote (Databricks)
+
+For Databricks, secrets are loaded from the Azure Key Vault-backed secret scope.
+
+**Configuration:**
 ```yaml
-# secrets.yaml
-database_password: !secret ${DB_PASSWORD}
-api_key: !secret ${API_KEY}
-connection_string: !secret ${CONN_STRING}
+# env.config.yaml
+remote:
+  secret_scope: "kvss-production-weu"  # Your Key Vault secret scope
 ```
 
-The `!secret` tag references environment variables. Values are resolved at load time.
+**How it works:**
+1. Framework calls `dbutils.secrets.list(scope)` to get all secret keys
+2. Each secret is fetched via `dbutils.secrets.get(scope, key)`
+3. Secrets are injected into `os.environ`
 
-**Loading Secrets:**
+**Access secrets the same way:**
 ```python
-from loadcore.secrets import load_local_secrets, inject_secrets_to_env
+import os
 
-# Load from YAML file
-secrets = load_local_secrets("./secrets.yaml")
-
-# Inject into environment variables
-inject_secrets_to_env(secrets)
+# Same code works in both environments
+db_password = os.environ["SQL_SERVER_PASSWORD"]
 ```
 
-**Databricks Secret Scope:**
-```python
-from loadcore.secrets import load_remote_secrets
+#### Security Best Practices
 
-# Load from Databricks secret scope
-secrets = load_remote_secrets(
-    dbutils=dbutils,
-    scope_name="my-secret-scope"
-)
-```
-
-**Security Best Practices:**
-- Never commit `secrets.yaml` to version control (add to `.gitignore`)
-- Use environment variables for local development
-- Use Databricks secret scopes in production
-- Secrets are hidden in `__repr__` to prevent accidental logging
+| Practice | Description |
+|----------|-------------|
+| **Never commit `.env`** | Add `.env` to `.gitignore` |
+| **Use `.env.example`** | Commit a template without values |
+| **Limit secret scope access** | Only grant access to required users/services |
+| **Rotate secrets regularly** | Update Key Vault secrets periodically |
 
 ### 4. Spark Manager (`spark_manager.py`)
 
@@ -325,24 +346,10 @@ class CustomSparkSessionBuilder(AbstractSessionBuilder):
         return builder.getOrCreate()
 ```
 
-### Custom Secret Loader
-
-```python
-from loadcore.secrets import Secret
-
-def load_from_vault(vault_path: str) -> list[Secret]:
-    """Load secrets from HashiCorp Vault."""
-    # Custom vault integration
-    client = hvac.Client()
-    data = client.secrets.kv.read_secret(path=vault_path)
-    return [
-        Secret(key=k, value=v)
-        for k, v in data["data"]["data"].items()
-    ]
-```
-
 ## Best Practices
 
-1. **Use .env variables for local secrets**: Never hardcode sensitive values
-2. **Initialise once**: Create `Environment` once at startup
-3. **Pass config down**: Use `PipelineConfig` for all pipeline needs
+1. **Use `.env` for local secrets**: Never hardcode sensitive values
+2. **Never commit `.env`**: Always add to `.gitignore`
+3. **Initialise once**: Create `Environment` once at startup
+4. **Pass config down**: Use `PipelineConfig` for all pipeline needs
+5. **Use `os.environ`**: Access secrets consistently across environments

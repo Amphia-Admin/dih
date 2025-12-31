@@ -18,9 +18,9 @@ Designed to run seamlessly on both local development environments and Databricks
 ```
 ih-ingestion/
 ├── loadcore/                 # Environment and configuration management
-│   ├── environment.py        # Auto-detect env, initialise Spark/secrets/logging
+│   ├── environment.py        # Auto-detect env, initialise Spark/logging
 │   ├── config.py             # Configuration dataclasses
-│   ├── secrets.py            # Secret loading (local YAML / Databricks scope)
+│   ├── secrets.py            # Remote secret loading (Databricks scope)
 │   ├── spark_manager.py      # Spark session builders
 │   └── README.md             # LoadCore documentation
 │
@@ -44,7 +44,8 @@ ih-ingestion/
 │   └── README.md             # Logging documentation
 │
 ├── env.config.yaml           # Environment configuration
-├── secrets.yaml              # Local secrets (git-ignored)
+├── .env                      # Local secrets (git-ignored)
+├── .env.example              # Template for required secrets
 └── demo.py                   # Example pipeline execution
 ```
 

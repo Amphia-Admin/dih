@@ -19,7 +19,6 @@ from loadcore.config import (
 )
 from loadcore.secrets import (
     inject_secrets_to_env,
-    load_local_secrets,
     load_remote_secrets,
 )
 from loadcore.spark_manager import LocalSparkSessionBuilder, RemoteSparkSessionBuilder
@@ -129,7 +128,6 @@ class Environment:
         return LocalEnvironmentConfig(
             catalog=local.get("catalog", "spark_catalog"),
             volumes=local.get("volumes", {}),
-            secrets_path=local.get("secrets_path"),
         )
 
     def _get_remote_config(self, data: dict[str, Any]) -> RemoteEnvironmentConfig:
@@ -224,11 +222,7 @@ class Environment:
             # Setup logging with volume path
             self._setup_logging(self._volumes.get("lake"))
 
-            if config.secrets_path:
-                secrets_path = self._config_path.parent / config.secrets_path
-                secrets = load_local_secrets(secrets_path)
-                inject_secrets_to_env(secrets)
-
+            # Local secrets are loaded from .env by Docker
             self._spark = self._create_spark_session(config.volumes.get("catalog"))
             self._setup_delta_logging(f"{self._catalog}.logs.app_logs")
 
