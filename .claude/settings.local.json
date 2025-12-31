@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc:*)",
+      "Bash(find:*)",
+      "Bash(done)",
+      "Bash(git checkout:*)",
+      "Bash(git clean:*)",
+      "Bash(cat:*)",
+      "Bash(echo:*)",
+      "Bash(python demo.py:*)",
+      "Bash(python /workspace/ih-ingestion/demo.py:*)",
+      "Bash(python -c:*)",
+      "Bash(head:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(/workspace/ih-ingestion/pipelines/landed/__init__.py )",
+      "Bash(/workspace/ih-ingestion/pipelines/landed/definitions/__init__.py )",
+      "Bash(/workspace/ih-ingestion/pipelines/bronze/__init__.py )",
+      "Bash(/workspace/ih-ingestion/pipelines/bronze/definitions/__init__.py )",
+      "Bash(/workspace/ih-ingestion/pipelines/bronze/pipelines/__init__.py )",
+      "Bash(/workspace/ih-ingestion/pipelines/silver/__init__.py )",
+      "Bash(/workspace/ih-ingestion/pipelines/silver/definitions/__init__.py )",
+      "Bash(/workspace/ih-ingestion/pipelines/silver/pipelines/__init__.py )",
+      "Bash(/workspace/ih-ingestion/pipelines/gold/__init__.py )",
+      "Bash(/workspace/ih-ingestion/pipelines/gold/definitions/__init__.py )",
+      "Bash(/workspace/ih-ingestion/pipelines/gold/pipelines/__init__.py)",
+      "Bash(rm:*)"
+    ]
+  }
+}

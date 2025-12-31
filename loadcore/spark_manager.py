@@ -21,7 +21,7 @@ class AbstractSessionBuilder(ABC):
 class LocalSparkSessionBuilder(AbstractSessionBuilder):
     """Provides methods to create and configure a Local Spark session."""
 
-    def __init__(self, app_name: str, warehouse_path: str) -> None:
+    def __init__(self, app_name: str, catalog_path: str) -> None:
         """
         Initialise a local spark session.
 
@@ -29,12 +29,12 @@ class LocalSparkSessionBuilder(AbstractSessionBuilder):
         ----------
         app_name : str
             The app name for the spark session constructor
-        warehouse_path : str
-            Path to the local warehouse/catalog directory
+        catalog_path : str
+            Path to the catalog volume (used as Spark warehouse directory)
 
         """
         self.app_name = app_name
-        self.warehouse_path = warehouse_path
+        self.catalog_path = catalog_path
 
     @property
     def builder(self) -> SparkSession.Builder:
@@ -50,7 +50,7 @@ class LocalSparkSessionBuilder(AbstractSessionBuilder):
         return (
             SparkSession.builder.appName(self.app_name)
             .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
-            .config("spark.sql.warehouse.dir", self.warehouse_path)
+            .config("spark.sql.warehouse.dir", self.catalog_path)
             .config(
                 "spark.sql.catalog.spark_catalog",
                 "org.apache.spark.sql.delta.catalog.DeltaCatalog",

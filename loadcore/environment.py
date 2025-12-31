@@ -97,10 +97,13 @@ class Environment:
         return self._volumes
 
     def _detect_mode(self) -> str:
-        """Auto-detect environment mode.
+        """
+        Detect the current environment mode.
 
-        Returns 'remote' if there's an active SparkSession (Databricks),
-        otherwise 'local' (we'll create a session).
+        Returns
+        -------
+        str
+            'local' if running locally, 'remote' if running on Databricks.
         """
         if SparkSession.getActiveSession() is not None:
             logger.info("Detected remote environment (active SparkSession)")
@@ -125,7 +128,6 @@ class Environment:
         local = data.get("local", {})
         return LocalEnvironmentConfig(
             catalog=local.get("catalog", "spark_catalog"),
-            warehouse_path=local.get("warehouse_path"),
             volumes=local.get("volumes", {}),
             secrets_path=local.get("secrets_path"),
         )
@@ -139,12 +141,12 @@ class Environment:
             secret_scope=remote.get("secret_scope", ""),
         )
 
-    def _create_spark_session(self, warehouse_path: str | None = None) -> SparkSession:
+    def _create_spark_session(self, catalog_path: str | None = None) -> SparkSession:
         """Create or get Spark session based on mode."""
         if self.is_local:
             return LocalSparkSessionBuilder(
                 app_name="ih",
-                warehouse_path=warehouse_path,
+                catalog_path=catalog_path,
             ).create_spark_session()
         else:
             return RemoteSparkSessionBuilder().create_spark_session()
@@ -227,7 +229,7 @@ class Environment:
                 secrets = load_local_secrets(secrets_path)
                 inject_secrets_to_env(secrets)
 
-            self._spark = self._create_spark_session(config.warehouse_path)
+            self._spark = self._create_spark_session(config.volumes.get("catalog"))
             self._setup_delta_logging(f"{self._catalog}.logs.app_logs")
 
         else:
