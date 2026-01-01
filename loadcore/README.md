@@ -1,8 +1,8 @@
-# Loadcore - Environment and Configuration Management
+# Loadcore - Environment Management
 
-Loadcore is the initialisation and configuration layer of the IH Ingestion Framework.
+Loadcore is the initialisation and configuration layer.
 
-It handles environment detection, Spark session management, secret loading, and provides a unified configuration interface for pipelines.
+It handles environment detection, Spark session management, secret loading and provides a unified configuration interface for pipelines.
 
 ## Overview
 
@@ -44,7 +44,7 @@ remote:
 
 | Property | Environment | Description |
 |----------|-------------|-------------|
-| `catalog` | Both | Spark/Unity Catalog name |
+| `catalog` | Both | Local hive metastor/Unity Catalog name |
 | `secret_scope` | Remote | Databricks secret scope name |
 | `volumes` | Both | Named volume path mappings |
 | `volumes.lake` | Both | Path to raw files and landed data |
@@ -56,7 +56,6 @@ remote:
 
 The main entry point for framework initialisation. Handles auto-detection of the runtime environment and coordinates all initialisation steps.
 
-**Key Features:**
 - **Auto-detection**: Identifies local vs Databricks runtime
 - **Unified initialisation**: Single entry point for all setup
 - **Pipeline configuration**: Creates `PipelineConfig` for runners
@@ -96,40 +95,8 @@ def _detect_mode(self) -> str:
 4. Load and inject secrets
 5. Set up logging (Stdout, JSON file, Delta table)
 
-### 2. Configuration (`config.py`)
 
-Dataclasses for type-safe configuration management.
-
-**LocalEnvironmentConfig:**
-```python
-@dataclass
-class LocalEnvironmentConfig:
-    catalog: str             # Spark catalog name (e.g., "spark_catalog")
-    volumes: dict[str, str]  # Volume name to path mappings
-```
-
-**RemoteEnvironmentConfig:**
-```python
-@dataclass
-class RemoteEnvironmentConfig:
-    catalog: str             # Unity Catalog name
-    secret_scope: str        # Databricks secret scope
-    volumes: dict[str, str]  # Volume name to DBFS path mappings
-```
-
-**PipelineConfig:**
-```python
-@dataclass
-class PipelineConfig:
-    spark: SparkSession    # Active Spark session
-    catalog: str           # Catalog name
-    volumes: dict[str, str]  # Volume mappings
-    metadata: dict[str, Any]  # Runtime metadata
-    static_config: dict[str, Any]  # Static configuration
-    spark_conf: dict[str, str]  # Spark configuration overrides
-```
-
-### 3. Secrets
+### 2. Secrets
 
 Secrets are managed differently in local and remote environments.
 
@@ -140,22 +107,13 @@ For local development, use a `.env` file in the project root. Docker automatical
 **Location:**
 ```
 ih-ingestion/
-├── .env              # Your secrets file (git-ignored)
-├── .env.example      # Template for required secrets (committed)
+├── .env              # Secrets file (git-ignored)
+├── .env.example      # Template for required secrets
 ├── env.config.yaml
 └── ...
 ```
 
-**Create your `.env` file:**
-```bash
-# .env
-SQL_SERVER_HOST=myserver.database.windows.net
-SQL_SERVER_PASSWORD=my-secret-password
-STORAGE_ACCOUNT_KEY=abc123...
-API_KEY=xyz789...
-```
-
-**Create a `.env.example` template** (safe to commit):
+**Create a `.env` template** (safe to commit):
 ```bash
 # .env.example - Copy to .env and fill in values
 SQL_SERVER_HOST=
@@ -164,7 +122,7 @@ STORAGE_ACCOUNT_KEY=
 API_KEY=
 ```
 
-**Access secrets in your code:**
+**How to access secrets:**
 ```python
 import os
 
@@ -196,15 +154,6 @@ import os
 # Same code works in both environments
 db_password = os.environ["SQL_SERVER_PASSWORD"]
 ```
-
-#### Security Best Practices
-
-| Practice | Description |
-|----------|-------------|
-| **Never commit `.env`** | Add `.env` to `.gitignore` |
-| **Use `.env.example`** | Commit a template without values |
-| **Limit secret scope access** | Only grant access to required users/services |
-| **Rotate secrets regularly** | Update Key Vault secrets periodically |
 
 ### 4. Spark Manager (`spark_manager.py`)
 
@@ -328,28 +277,6 @@ config = env.for_pipeline(metadata={"name": "test"})
 # In Databricks: Uses active cluster session
 ```
 
-## Extending LoadCore
+## Extending Loadcore
 
-### Custom Session Builder
-
-```python
-from loadcore.spark_manager import AbstractSessionBuilder
-
-class CustomSparkSessionBuilder(AbstractSessionBuilder):
-    def __init__(self, config: dict):
-        self.config = config
-
-    def get_or_create(self) -> SparkSession:
-        builder = SparkSession.builder
-        for key, value in self.config.items():
-            builder = builder.config(key, value)
-        return builder.getOrCreate()
-```
-
-## Best Practices
-
-1. **Use `.env` for local secrets**: Never hardcode sensitive values
-2. **Never commit `.env`**: Always add to `.gitignore`
-3. **Initialise once**: Create `Environment` once at startup
-4. **Pass config down**: Use `PipelineConfig` for all pipeline needs
-5. **Use `os.environ`**: Access secrets consistently across environments
+TODO

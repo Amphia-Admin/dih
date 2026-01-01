@@ -1,38 +1,32 @@
 # Logging System
 
-The IH Ingestion Framework includes a comprehensive logging system with multiple output channels: console, JSON files, and optional Delta table storage.
+Comprehensive logging system with multiple output channels: console, JSON files optional Delta table output.
 
 ## Architecture Overview
 
 ```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────────┐
-│   Application   │────>│   QueueHandler   │────>│   stderr (console)  │
-│    Logging      │     │   (async queue)  │     │   file_json (JSON)  │
-└─────────────────┘     └──────────────────┘     └─────────────────────┘
-                                                           │
-                        ┌──────────────────┐               │
-                        │  DeltaLogHandler │<──────────────┘
-                        │                  │
-                        └────────┬─────────┘
-                                 │
-                        ┌────────▼─────────┐
-                        │   Delta Table    │
-                        │  {catalog}.logs  │
-                        │   .app_logs      │
-                        └──────────────────┘
+                                              ┌─────────────────────┐
+                                         ┌───>│   stderr (console)  │
+                                         │    └─────────────────────┘
+┌─────────────────┐     ┌──────────────────┐
+│   Application   │────>│   QueueHandler   │
+│    Logging      │     │   (async queue)  │
+└────────┬────────┘     └────────┬─────────┘
+         │                       │    ┌─────────────────────┐
+         │                       └───>│   file_json (JSON)  │
+         │                            └─────────────────────┘
+         │
+         │              ┌──────────────────┐     ┌─────────────────────┐
+         └─────────────>│  DeltaLogHandler │────>│     Delta Table     │
+                        │    (optional)    │     │  {catalog}.logs     │
+                        └──────────────────┘     └─────────────────────┘
 ```
 
 ## Components
 
 ### 1. JSON Formatter (`json_formatter.py`)
 
-Converts log records to machine-readable JSON format for structured logging and log aggregation tools.
-
-**Features:**
-- ISO 8601 timestamp formatting
-- Configurable field mapping via `fmt_keys`
-- Preserves exception and stack trace information
-- `NonErrorFilter` for restricting handlers to INFO level and below
+Converts log records to JSON format for structured logging.
 
 **Output Format:**
 ```json
@@ -44,28 +38,14 @@ Converts log records to machine-readable JSON format for structured logging and 
   "module": "runner",
   "function": "run",
   "line": 45
+  ...
 }
-```
-
-**Usage:**
-```python
-from custom_logger.json_formatter import JSONFormatter
-
-formatter = JSONFormatter(
-    fmt_keys={
-        "level": "levelname",
-        "message": "message",
-        "timestamp": "timestamp",
-        "logger": "name",
-    }
-)
 ```
 
 ### 2. Delta Log Handler (`delta_handler.py`)
 
-Writes log records to a Delta table for persistent, queryable log storage. Ideal for production environments where you need to analyse logs using SQL.
+Writes log records to a Delta table for queryable log storage.
 
-**Features:**
 - **Buffered writes**: Accumulates records before writing (default: 50 records)
 - **Periodic flushing**: Auto-flush at intervals (default: 30 seconds)
 - **Thread-safe**: Uses locking for concurrent access
@@ -123,72 +103,13 @@ ORDER BY 1 DESC, 2;
 
 YAML-based logging configuration using Python's `logging.config.dictConfig`.
 
-**Default Configuration:**
-```yaml
-version: 1
-disable_existing_loggers: false
+## Integration with Loadcore module (Environment object)
 
-formatters:
-  simple:
-    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-  json:
-    "()" : "custom_logger.json_formatter.JSONFormatter"
-    fmt_keys:
-      level: levelname
-      message: message
-      timestamp: timestamp
-      logger: name
-      module: module
-      function: funcName
-      line: lineno
-      thread_name: threadName
-
-filters:
-  non_error:
-    "()" : "custom_logger.json_formatter.NonErrorFilter"
-
-handlers:
-  stderr:
-    class: logging.StreamHandler
-    level: DEBUG
-    formatter: simple
-    stream: ext://sys.stderr
-
-  file_json:
-    class: logging.handlers.RotatingFileHandler
-    level: DEBUG
-    formatter: json
-    filename: ./logs/app.log.jsonl
-    maxBytes: 10485760  # 10MB
-    backupCount: 3
-    encoding: utf-8
-
-  queue_handler:
-    class: logging.handlers.QueueHandler
-    handlers:
-      - stderr
-      - file_json
-    respect_handler_level: true
-
-root:
-  level: DEBUG
-  handlers:
-    - queue_handler
-```
-
-**Key Features:**
-- **QueueHandler**: Async logging to prevent I/O blocking
-- **RotatingFileHandler**: Auto-rotation at 10MB with 3 backups
-- **Dual output**: Console (simple format) + JSON file (structured)
-
-## Integration with Environment
-
-The logging system is automatically initialised when you create an `Environment` instance:
+Logging is automatically initialised when you create an `Environment` instance:
 
 ```python
 from loadcore.environment import Environment
 
-# Logging is set up automatically
 env = Environment("./env.config.yaml")
 ```
 
@@ -224,29 +145,11 @@ handlers:
     level: DEBUG    # All levels to JSON file
 ```
 
-### Adding Custom Loggers
-
-```yaml
-loggers:
-  src.core.runner:
-    level: DEBUG
-    handlers:
-      - queue_handler
-    propagate: false
-
-  pyspark:
-    level: WARNING
-    handlers:
-      - queue_handler
-    propagate: false
-```
-
 ### Disabling Delta Logging
 
 Delta logging is optional and only activates if explicitly configured. To use it:
 
 ```python
-# In your pipeline runner
 from custom_logger.delta_handler import DeltaLogHandler
 
 handler = DeltaLogHandler(
@@ -256,7 +159,7 @@ handler = DeltaLogHandler(
 logging.getLogger().addHandler(handler)
 ```
 
-## Best Practices
+# How to add logging in pipelines framework
 
 1. **Use structured logging**: Include relevant context in log messages
    ```python
@@ -278,23 +181,3 @@ logging.getLogger().addHandler(handler)
 4. **Flush on completion**: Ensure all logs are written before exit
    ```python
    logging.shutdown()
-   ```
-
-5. **Monitor log size**: Set up alerts for log growth in production
-
-## Troubleshooting
-
-### Logs not appearing
-- Check log level settings in `config.yaml`
-- Verify the log directory exists and is writable
-- Ensure `Environment` is initialised before logging
-
-### Delta table not created
-- Verify Spark session has write permissions
-- Check catalog and schema exist
-- Ensure Delta Lake is properly configured
-
-### Performance issues
-- Increase `buffer_size` in `DeltaLogHandler`
-- Reduce log verbosity in production
-- Use `NonErrorFilter` to limit console output
