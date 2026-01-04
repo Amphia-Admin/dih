@@ -1,10 +1,22 @@
 """Core interface definitions for ih framework."""
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from pyspark.sql.types import StructType
+
+    from src.core.types import MergeOptionsDict
+
+
+class VolumeNotFoundError(KeyError):
+    """Raised when a requested volume is not found in the table definition."""
+
+    def __init__(self, volume_name: str) -> None:
+        self.volume_name = volume_name
+        super().__init__(f"Volume '{volume_name}' not configured")
 
 
 class TableDefinition(ABC):
@@ -16,7 +28,7 @@ class TableDefinition(ABC):
     def get_volume(self, name: str) -> str:
         """Get a volume path by name."""
         if self.volumes is None or name not in self.volumes:
-            raise KeyError(f"Volume '{name}' not configured")
+            raise VolumeNotFoundError(name)
         return self.volumes[name]
 
     @property
@@ -35,7 +47,7 @@ class TableDefinition(ABC):
         return None
 
     @property
-    def options(self) -> dict[str, Any]:
+    def options(self) -> dict[str, str]:
         """Return read/write options for the table."""
         return {}
 
@@ -91,20 +103,9 @@ class TargetTableDefMixin(ABC):
         return None
 
     @property
-    def merge_options(self) -> dict[str, Any] | None:
-        """
-        Return Delta merge-specific options.
+    def merge_options(self) -> MergeOptionsDict | None:
+        """Return Delta merge-specific options.
 
-        Supported options:
-            when_matched_update_condition: SQL condition for conditional update
-            when_matched_delete_condition: SQL condition for conditional delete
-            when_not_matched_insert_condition: SQL condition for conditional insert
-            columns_to_update: List of columns to update (default: all non-PK columns)
-            columns_to_insert: List of columns to insert (default: all columns)
-            source_alias: Alias for source table (default: "src")
-            target_alias: Alias for target table (default: "tgt")
-            broadcast_threshold: Broadcast threshold in bytes (default: Spark default)
+        See MergeOptionsDict for available options.
         """
         return None
-
-

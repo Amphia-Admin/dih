@@ -13,7 +13,7 @@ from src.core.writer_registry import WriterRegistry
 from src.utils.loader import DynamicLoader
 
 if TYPE_CHECKING:
-    from loadcore import PipelineConfig
+    from loadcore.config import PipelineConfig
     from src.core.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
@@ -148,7 +148,11 @@ class Runner:
             logger.info(f"Read '{alias}': {df_desc} in {read_duration:.2f}s")
 
         extract_duration = time.perf_counter() - extract_start
-        logger.info(f"Extraction complete: {len(self._pipeline.inputs)} input(s), {total_rows:,} total rows in {extract_duration:.2f}s")
+        input_count = len(self._pipeline.inputs)
+        logger.info(
+            f"Extraction complete: {input_count} input(s), "
+            f"{total_rows:,} total rows in {extract_duration:.2f}s"
+        )
 
     def _inject_metadata(self) -> None:
         """Inject metadata into pipeline."""
@@ -173,7 +177,10 @@ class Runner:
 
         process_duration = time.perf_counter() - process_start
         output_count = len(self._pipeline.outputs)
-        logger.info(f"Pipeline '{pipeline_name}' generated {output_count} output(s) in {process_duration:.2f}s")
+        logger.info(
+            f"Pipeline '{pipeline_name}' generated {output_count} output(s) "
+            f"in {process_duration:.2f}s"
+        )
 
     def _load_outputs(self) -> None:
         """Write output data via registered writers."""
@@ -211,4 +218,7 @@ class Runner:
                 logger.warning(f"No writer registered for output: {output_name}")
 
         load_duration = time.perf_counter() - load_start
-        logger.info(f"Load complete: {written_count} output(s), {total_rows:,} total rows in {load_duration:.2f}s")
+        logger.info(
+            f"Load complete: {written_count} output(s), "
+            f"{total_rows:,} total rows in {load_duration:.2f}s"
+        )

@@ -1,8 +1,10 @@
 """Spark DataFrame writer implementation."""
 
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from pyspark.sql import SparkSession
 
@@ -10,6 +12,8 @@ from src.core.table_interfaces import TableDefinition, TargetTableDefMixin
 
 if TYPE_CHECKING:
     from pyspark.sql import DataFrame
+
+    from src.core.types import WriteOptionsValue
 
 logger = logging.getLogger(__name__)
 
@@ -29,12 +33,13 @@ def _ensure_schema_exists(table_name: str) -> None:
         logger.debug(f"Schema {schema} ready")
 
 
-
 class AbstractWriter(ABC):
     """Abstract writer interface."""
 
     @abstractmethod
-    def write(self, df: DataFrame, output_def: TableDefinition, **kwargs: Any) -> None:
+    def write(
+        self, df: DataFrame, output_def: TableDefinition, **kwargs: WriteOptionsValue
+    ) -> None:
         """Write DataFrame to target."""
         ...
 
@@ -42,7 +47,9 @@ class AbstractWriter(ABC):
 class SparkDataFrameWriter(AbstractWriter):
     """Generic Spark DataFrame writer."""
 
-    def write(self, df: DataFrame, output_def: TableDefinition, **kwargs: Any) -> None:
+    def write(
+        self, df: DataFrame, output_def: TableDefinition, **kwargs: WriteOptionsValue
+    ) -> None:
         """Write DataFrame to target defined in TableDefinition.
 
         Supports both managed (catalog) and unmanaged (path-based) tables.

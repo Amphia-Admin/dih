@@ -1,12 +1,16 @@
 """Utility functions for Delta merge operations."""
 
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from src.core.table_interfaces import TableDefinition, TargetTableDefMixin
 
 if TYPE_CHECKING:
-    from pyspark.sql import DataFrame
+    from pyspark.sql import Column, DataFrame
+
+    from src.core.types import MergeOptionsDict
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +59,7 @@ def build_merge_condition(
 def build_column_mapping(
     columns: list[str],
     source_alias: str = "src",
-) -> dict[str, str]:
+) -> dict[str, str | Column]:
     """
     Build column mapping for insert/update operations.
 
@@ -70,7 +74,7 @@ def build_column_mapping(
 
     Returns
     -------
-    dict[str, str]
+    dict[str, str | Column]
         Dictionary mapping column names to aliased source columns
 
     Examples
@@ -175,9 +179,8 @@ def get_non_key_columns(all_columns: list[str], key_columns: list[str]) -> list[
     return [col for col in all_columns if col not in key_columns]
 
 
-def get_merge_options(output_def: TableDefinition) -> dict[str, Any]:
-    """
-    Extract merge options from TableDefinition with defaults.
+def get_merge_options(output_def: TableDefinition) -> MergeOptionsDict:
+    """Extract merge options from TableDefinition with defaults.
 
     Returns a dictionary with default values for all merge options.
     If output_def has merge_options property, those values override defaults.
@@ -189,16 +192,10 @@ def get_merge_options(output_def: TableDefinition) -> dict[str, Any]:
 
     Returns
     -------
-    dict[str, Any]
+    MergeOptionsDict
         Dictionary with all merge option keys and values
-
-    Examples
-    --------
-    >>> opts = get_merge_options(table_def)
-    >>> opts["source_alias"]
-    "src"
     """
-    defaults: dict[str, Any] = {
+    defaults: MergeOptionsDict = {
         "source_alias": "src",
         "target_alias": "tgt",
         "when_matched_update_condition": None,

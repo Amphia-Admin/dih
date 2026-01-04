@@ -2,16 +2,15 @@
 
 from pyspark.sql import functions as F
 
+from pipelines.bronze.definitions.bronze_products_def import BronzeProductsDef
+from pipelines.bronze.schemas.bronze_products_schema import BRONZE_PRODUCTS_SCHEMA
+from pipelines.landed.definitions.landed_products_def import LandedProductsDef
 from src.core.pipeline import Pipeline, pipeline_definition
 from src.core.reader_registry import register_reader
 from src.core.writer_registry import register_writer
 from src.readers.base_spark_reader import SparkDataFrameReader
-from src.writers.base_spark_writer import SparkDataFrameWriter
 from src.transforms.apply_schema import apply_schema
-
-from pipelines.landed.definitions.landed_products_def import LandedProductsDef
-from pipelines.bronze.definitions.bronze_products_def import BronzeProductsDef
-from pipelines.bronze.schemas.bronze_products_schema import BRONZE_PRODUCTS_SCHEMA
+from src.writers.base_spark_writer import SparkDataFrameWriter
 
 
 @pipeline_definition(name="BronzeProductsPipeline")
@@ -25,12 +24,11 @@ class BronzeProductsPipeline(Pipeline):
     """
 
     def process(self) -> None:
+        """Transform landed products data by adding metadata columns and applying schema."""
         df = self.inputs["landed_products"]
 
-        df_with_metadata = (
-            df
-            .withColumn("ingestion_timestamp", F.current_timestamp())
-            .withColumn("source_file", F.input_file_name())
+        df_with_metadata = df.withColumn("ingestion_timestamp", F.current_timestamp()).withColumn(
+            "source_file", F.input_file_name()
         )
 
         df_final = apply_schema(df_with_metadata, BRONZE_PRODUCTS_SCHEMA)

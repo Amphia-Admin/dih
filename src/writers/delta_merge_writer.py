@@ -1,9 +1,12 @@
 """Delta merge writer using business keys."""
 
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from delta.tables import DeltaTable
+from pyspark.errors import AnalysisException
 
 from src.core.table_interfaces import TableDefinition, TargetTableDefMixin
 from src.writers.delta_writer_base import DeltaWriterBase
@@ -16,6 +19,8 @@ from src.writers.utils import (
 
 if TYPE_CHECKING:
     from pyspark.sql import DataFrame, SparkSession
+
+    from src.core.types import WriteOptionsValue
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +35,15 @@ def _log_merge_metrics(delta_table: DeltaTable) -> None:
             inserted = metrics.get("numTargetRowsInserted", "N/A")
             updated = metrics.get("numTargetRowsUpdated", "N/A")
             deleted = metrics.get("numTargetRowsDeleted", "N/A")
-            matched = metrics.get("numTargetRowsMatchedOnly", metrics.get("numTargetRowsMatched", "N/A"))
+            matched = metrics.get(
+                "numTargetRowsMatchedOnly", metrics.get("numTargetRowsMatched", "N/A")
+            )
             source = metrics.get("numSourceRows", "N/A")
-            logger.info(f"Merge stats: source={source}, matched={matched}, inserted={inserted}, updated={updated}, deleted={deleted}")
-    except Exception as e:
+            logger.info(
+                f"Merge stats: source={source}, matched={matched}, "
+                f"inserted={inserted}, updated={updated}, deleted={deleted}"
+            )
+    except AnalysisException as e:
         logger.debug(f"Could not retrieve merge metrics: {e}")
 
 
@@ -51,7 +61,7 @@ class DeltaMergeWriter(DeltaWriterBase):
         output_def: TableDefinition,
         spark: SparkSession,
         path: str,
-        **kwargs: Any,
+        **kwargs: WriteOptionsValue,
     ) -> None:
         """
         Perform merge operation using business keys.
@@ -66,7 +76,7 @@ class DeltaMergeWriter(DeltaWriterBase):
             SparkSession instance
         path : str
             Path to Delta table
-        **kwargs : Any
+        **kwargs : WriteOptionsValue
             Additional merge options
 
         Raises
@@ -170,7 +180,7 @@ class DeltaMergeWriter(DeltaWriterBase):
         output_def: TableDefinition,
         spark: SparkSession,
         table_name: str,
-        **kwargs: Any,
+        **kwargs: WriteOptionsValue,
     ) -> None:
         """
         Perform merge operation on managed Delta table using business keys.
@@ -185,7 +195,7 @@ class DeltaMergeWriter(DeltaWriterBase):
             SparkSession instance
         table_name : str
             Fully qualified table name
-        **kwargs : Any
+        **kwargs : WriteOptionsValue
             Additional merge options
 
         Raises

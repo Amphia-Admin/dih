@@ -1,9 +1,9 @@
 # Repository:   ih-ingestion
 # Path:         .docker/requirements.txt
 
-mypy
+mypy==1.19.1
 pyspark==4.0.0 # 4.1.0 pyspark does not work with dataflint. 
 delta-spark==4.0.0
-ruff
-pandas
-pyyaml
+ruff==0.14.10
+pandas==
+pre-commit==4.5.1

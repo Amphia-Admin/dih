@@ -1,8 +1,9 @@
 """Dynamic class loading utilities."""
 
+from __future__ import annotations
+
 import importlib
 import logging
-from typing import Any
 
 from src.core.pipeline import Pipeline
 
@@ -13,7 +14,7 @@ class DynamicLoader:
     """Utilities for dynamic class loading from string references."""
 
     @staticmethod
-    def load_class(fqn: str) -> type[Any]:
+    def load_class(fqn: str) -> type:
         """
         Load a class from a fully qualified name.
 
@@ -24,7 +25,7 @@ class DynamicLoader:
 
         Returns
         -------
-        type[Any]
+        type
             The loaded class (not an instance)
 
         Raises
@@ -50,21 +51,22 @@ class DynamicLoader:
             logger.debug(f"Imported module: {module_path}")
         except ImportError as e:
             msg = f"Failed to import module '{module_path}' from '{fqn}'"
-            logger.error(msg)
+            logger.exception(msg)
             raise ImportError(msg) from e
 
         try:
             # Get the class from the module
-            cls: type[Any] = getattr(module, class_name)
+            cls: type = getattr(module, class_name)
             logger.debug(f"Loaded class: {class_name}")
-            return cls
         except AttributeError as e:
             msg = (
                 f"Class '{class_name}' not found in module '{module_path}'. "
                 f"Available names: {dir(module)}"
             )
-            logger.error(msg)
+            logger.exception(msg)
             raise AttributeError(msg) from e
+        else:
+            return cls
 
     @staticmethod
     def load_pipeline(
@@ -94,12 +96,6 @@ class DynamicLoader:
         """
         # If already a class, validate and return
         if not isinstance(reference, str):
-            if not isinstance(reference, type) or not issubclass(reference, Pipeline):
-                msg = (
-                    f"Expected Pipeline class or string, got {type(reference)}. "
-                    f"Ensure the class inherits from Pipeline."
-                )
-                raise TypeError(msg)
             logger.debug(f"Using provided class: {reference.__name__}")
             return reference
 

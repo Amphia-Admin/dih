@@ -5,13 +5,14 @@ from __future__ import annotations
 import atexit
 import logging
 import logging.config
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING
 
 import yaml
 from pyspark.sql import SparkSession
 
+from custom_logger.delta_handler import DeltaLogHandler
 from loadcore.config import (
     LocalEnvironmentConfig,
     PipelineConfig,
@@ -23,7 +24,14 @@ from loadcore.secrets import (
 )
 from loadcore.spark_manager import LocalSparkSessionBuilder, RemoteSparkSessionBuilder
 
-from custom_logger.delta_handler import DeltaLogHandler
+if TYPE_CHECKING:
+    from src.core.types import (
+        EnvironmentConfigDict,
+        LocalEnvConfigDict,
+        PipelineMetadata,
+        RemoteEnvConfigDict,
+        SparkConfig,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +41,13 @@ class ConfigLoadError(Exception):
 
     def __init__(self, path: Path, reason: str) -> None:
         super().__init__(f"Cannot load config from '{path}': {reason}")
+
+
+class EnvironmentNotInitialisedError(RuntimeError):
+    """Environment has not been properly initialised."""
+
+    def __init__(self) -> None:
+        super().__init__("Environment not properly initialised - spark or catalog is None")
 
 
 class Environment:
@@ -111,28 +126,29 @@ class Environment:
         logger.info("Detected local environment (no active SparkSession)")
         return "local"
 
-    def _load_yaml_config(self) -> dict[str, Any]:
+    def _load_yaml_config(self) -> EnvironmentConfigDict:
         """Load the YAML configuration file."""
         if not self._config_path.exists():
             raise ConfigLoadError(self._config_path, "file not found")
 
         try:
             with self._config_path.open() as f:
-                return yaml.safe_load(f)
+                result: EnvironmentConfigDict = yaml.safe_load(f)
+                return result
         except yaml.YAMLError as e:
             raise ConfigLoadError(self._config_path, str(e)) from e
 
-    def _get_local_config(self, data: dict[str, Any]) -> LocalEnvironmentConfig:
+    def _get_local_config(self, data: EnvironmentConfigDict) -> LocalEnvironmentConfig:
         """Extract local configuration from YAML data."""
-        local = data.get("local", {})
+        local: LocalEnvConfigDict = data.get("local", {})
         return LocalEnvironmentConfig(
             catalog=local.get("catalog", "spark_catalog"),
             volumes=local.get("volumes", {}),
         )
 
-    def _get_remote_config(self, data: dict[str, Any]) -> RemoteEnvironmentConfig:
+    def _get_remote_config(self, data: EnvironmentConfigDict) -> RemoteEnvironmentConfig:
         """Extract remote configuration from YAML data."""
-        remote = data.get("remote", {})
+        remote: RemoteEnvConfigDict = data.get("remote", {})
         return RemoteEnvironmentConfig(
             catalog=remote.get("catalog", "default"),
             volumes=remote.get("volumes", {}),
@@ -144,7 +160,7 @@ class Environment:
         if self.is_local:
             return LocalSparkSessionBuilder(
                 app_name="ih",
-                catalog_path=catalog_path,
+                catalog_path=catalog_path or "spark-warehouse",
             ).create_spark_session()
         else:
             return RemoteSparkSessionBuilder().create_spark_session()
@@ -160,7 +176,7 @@ class Environment:
 
             # Replace filename with timestamped version using volume path
             if "handlers" in config and "file_json" in config["handlers"]:
-                timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+                timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
                 if not log_base_path:
                     msg = "log_base_path is required for file logging"
                     raise ValueError(msg)
@@ -173,7 +189,7 @@ class Environment:
             logging.config.dictConfig(config)
 
             queue_handler = logging.getHandlerByName("queue_handler")
-            if queue_handler is not None:
+            if queue_handler is not None and hasattr(queue_handler, "listener"):
                 queue_handler.listener.start()
                 atexit.register(queue_handler.listener.stop)
 
@@ -209,6 +225,8 @@ class Environment:
             The Spark session and catalog name
         """
         if self._initialised:
+            if self._spark is None or self._catalog is None:
+                raise EnvironmentNotInitialisedError
             return self._spark, self._catalog
 
         # Load config first to get volumes for logging
@@ -227,17 +245,17 @@ class Environment:
             self._setup_delta_logging(f"{self._catalog}.logs.app_logs")
 
         else:
-            config = self._get_remote_config(yaml_data)
-            self._catalog = config.catalog
-            self._volumes = config.volumes
+            remote_config = self._get_remote_config(yaml_data)
+            self._catalog = remote_config.catalog
+            self._volumes = remote_config.volumes
 
             # Setup logging with volume path
             self._setup_logging(self._volumes.get("lake"))
 
             self._spark = self._create_spark_session()
 
-            if config.secret_scope:
-                secrets = load_remote_secrets(self._spark, config.secret_scope)
+            if remote_config.secret_scope:
+                secrets = load_remote_secrets(self._spark, remote_config.secret_scope)
                 inject_secrets_to_env(secrets)
 
             self._setup_delta_logging(f"{self._catalog}.logs.app_logs")
@@ -245,12 +263,14 @@ class Environment:
         self._initialised = True
         logger.info(f"Initialised: mode={self.mode}, catalog={self._catalog}")
 
+        if self._spark is None or self._catalog is None:
+            raise EnvironmentNotInitialisedError
         return self._spark, self._catalog
 
     def for_pipeline(
         self,
-        metadata: dict[str, Any] | None = None,
-        static_config: dict[str, Any] | None = None,
+        metadata: PipelineMetadata | None = None,
+        static_config: SparkConfig | None = None,
         spark_conf: dict[str, str] | None = None,
     ) -> PipelineConfig:
         """Create a PipelineConfig for running a pipeline.
@@ -259,9 +279,9 @@ class Environment:
 
         Parameters
         ----------
-        metadata : dict[str, Any] | None
+        metadata : PipelineMetadata | None
             Pipeline metadata
-        static_config : dict[str, Any] | None
+        static_config : SparkConfig | None
             Static configuration to inject into pipeline
         spark_conf : dict[str, str] | None
             Spark configuration overrides

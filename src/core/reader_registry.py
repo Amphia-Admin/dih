@@ -1,65 +1,72 @@
 """Reader registration system."""
 
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from src.core.table_interfaces import TableDefinition
-    from src.readers.base_spark_reader import AbstractReader
     from src.core.pipeline import Pipeline
+    from src.core.table_interfaces import TableDefinition
+    from src.core.types import WriteOptionsValue
+    from src.readers.base_spark_reader import AbstractReader
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class RegisteredReader:
+    """Container for registered reader configuration."""
+
+    definition_type: type[TableDefinition]
+    reader: type[AbstractReader]
+    kwargs: dict[str, str | int | bool | list[str] | None] = field(default_factory=dict)
+    aliases: list[str] = field(default_factory=list)
+    transforms: list[type[Pipeline]] = field(default_factory=list)
+
+    def __eq__(self, other: object) -> bool:
+        """Compare two RegisteredReader instances by their hash values."""
+        return isinstance(other, RegisteredReader) and hash(self) == hash(other)
+
+    def __hash__(self) -> int:
+        """Return hash based on definition type and reader class."""
+        return hash((self.definition_type, self.reader))
+
+    def read(
+        self,
+        catalog: str | None = None,
+        volumes: dict[str, str] | None = None,
+    ) -> AbstractReader:
+        """Instantiate and execute the reader."""
+        def_obj = self.definition_type()
+        def_obj.catalog = catalog
+        def_obj.volumes = volumes
+
+        rdr_obj = self.reader()
+        rdr_obj.read(def_obj)
+
+        return rdr_obj
+
+
+@dataclass
+class _ReaderRegistryState:
+    """Internal state for ReaderRegistry singleton."""
+
+    alias_lookup: dict[str, RegisteredReader] = field(default_factory=dict)
+    registered_readers: dict[int, RegisteredReader] = field(default_factory=dict)
 
 
 class ReaderRegistry:
     """Singleton registry for readers."""
 
-    _shared_state: dict[str, Any] | None = None
-
-    class RegisteredReader:
-        """Container for registered reader configuration."""
-
-        def __init__(
-            self,
-            definition_type: type[TableDefinition],
-            reader: type[AbstractReader],
-            **kwargs: Any,
-        ) -> None:
-            self._definition_type = definition_type
-            self.aliases: list[str] = []
-            self.transforms: list[type[Pipeline]] = []
-            self._reader = reader
-            self._kwargs = kwargs
-
-        def __eq__(self, other: object) -> bool:
-            return isinstance(other, ReaderRegistry.RegisteredReader) and hash(self) == hash(other)
-
-        def __hash__(self) -> int:
-            return hash((self._definition_type, self._reader))
-
-        def read(
-            self,
-            catalog: str | None = None,
-            volumes: dict[str, str] | None = None,
-        ) -> AbstractReader:
-            """Instantiate and execute the reader."""
-            def_obj = self._definition_type()
-            def_obj.catalog = catalog
-            def_obj.volumes = volumes
-
-            rdr_obj = self._reader()
-            rdr_obj.read(def_obj)
-
-            return rdr_obj
+    _shared_state: _ReaderRegistryState | None = None
 
     def __init__(self) -> None:
-        if not ReaderRegistry._shared_state:
+        if ReaderRegistry._shared_state is None:
             logger.info("Initialising ReaderRegistry")
-            ReaderRegistry._shared_state = self.__dict__
-            self._alias_lookup: dict[str, ReaderRegistry.RegisteredReader] = {}
-            self._registered_readers: dict[int, ReaderRegistry.RegisteredReader] = {}
-        else:
-            self.__dict__ = ReaderRegistry._shared_state
+            ReaderRegistry._shared_state = _ReaderRegistryState()
+        self._state = ReaderRegistry._shared_state
 
     def _register(
         self,
@@ -67,26 +74,29 @@ class ReaderRegistry:
         definition_type: type[TableDefinition],
         reader: type[AbstractReader],
         transformation: type[Pipeline],
-        **kwargs: Any,
+        **kwargs: WriteOptionsValue,
     ) -> None:
         """Register a reader internally with the registry."""
         reader_identity = hash((definition_type, reader))
 
-        if reader_identity in self._registered_readers:
-            registered_reader = self._registered_readers[reader_identity]
+        if reader_identity in self._state.registered_readers:
+            registered_reader = self._state.registered_readers[reader_identity]
         else:
-            registered_reader = self.RegisteredReader(
+            registered_reader = RegisteredReader(
                 definition_type=definition_type,
                 reader=reader,
-                **kwargs,
+                kwargs=dict(kwargs),
             )
-            self._registered_readers[reader_identity] = registered_reader
+            self._state.registered_readers[reader_identity] = registered_reader
 
         registered_reader.transforms.append(transformation)
         if name not in registered_reader.aliases:
             registered_reader.aliases.append(name)
-            self._alias_lookup[name] = registered_reader
-            logger.debug(f"Registered reader '{name}' -> {definition_type.__name__} for {transformation.__name__}")
+            self._state.alias_lookup[name] = registered_reader
+            logger.debug(
+                f"Registered reader '{name}' -> {definition_type.__name__} "
+                f"for {transformation.__name__}"
+            )
 
     def register(
         self,
@@ -94,7 +104,7 @@ class ReaderRegistry:
         definition_type: type[TableDefinition],
         reader: type[AbstractReader],
         transformation: type[Pipeline],
-        **kwargs: Any,
+        **kwargs: WriteOptionsValue,
     ) -> None:
         """Public registration method."""
         self._register(alias, definition_type, reader, transformation, **kwargs)
@@ -102,13 +112,13 @@ class ReaderRegistry:
     @property
     def readers(self) -> list[RegisteredReader]:
         """Return all registered readers."""
-        return list(self._alias_lookup.values())
+        return list(self._state.alias_lookup.values())
 
     def get_readers(self, pipeline: type[Pipeline]) -> list[RegisteredReader]:
         """Get all readers for a specific pipeline."""
         readers = [
             reader
-            for reader in self._registered_readers.values()
+            for reader in self._state.registered_readers.values()
             if pipeline in reader.transforms
         ]
         if readers:
@@ -127,14 +137,14 @@ class register_reader:
         definition: type[TableDefinition],
         reader: type[AbstractReader],
         alias: str | None = None,
-        **kwargs: Any,
+        **kwargs: WriteOptionsValue,
     ) -> None:
         self._definition = definition
 
         if alias is not None:
             self._alias = alias
         elif hasattr(definition, "default_alias"):
-            self._alias = definition.default_alias  # type: ignore[attr-defined]
+            self._alias = definition.default_alias  # type: ignore[assignment]
         else:
             msg = (
                 f"No alias defined for '{definition}'. "

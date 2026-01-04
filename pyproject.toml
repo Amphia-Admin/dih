@@ -30,6 +30,7 @@ dev = [
 
 [tool.ruff]
 target-version = "py314"
+line-length = 100
 
 # Include directories and files
 include = ["pyproject.toml", "*.py"]
@@ -67,31 +68,35 @@ exclude = [
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-    "D212", 
-    "D203", 
-    "D211", 
-    "COM812", 
-    "ISC001", 
-    "ERA001", 
-    "Q000", 
+    "D212",
+    "D203",
+    "D211",
+    "COM812",
+    "ISC001",
+    "ERA001",
+    "Q000",
     "Q001",
-    "EXE002", 
-    "TD002", 
-    "TD003", 
+    "EXE002",
+    "TD002",
+    "TD003",
     "FIX002",
     "D104",
     "RET505",
     "S506",
     "PTH120",
     "T201",
-    "PD901",
     "N812",
     "PLR2004", # Allow magic numbers
     "C901", # Allow complex functions
-    "PLR0912", # Allow too many lines in function
-    "PLR0915", # Allow too many arguments in function
+    "PLR0912", # Allow too many branches
+    "PLR0915", # Allow too many statements
     "RUF005",
     "G004", # Allow use of logging-f-string
+    "ARG002", # Allow unused method arguments (API extensibility)
+    "RUF012", # Allow mutable class attributes without ClassVar
+    "N801", # Allow lowercase class names for decorator classes
+    "PLW1641", # Allow Mapping without __hash__ (ProcessingResult)
+    "TC002", # Allow runtime imports (needed for DataFrame operations)
 ]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.

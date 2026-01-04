@@ -1,11 +1,15 @@
 """Delta table logging handler."""
 
+from __future__ import annotations
+
 import atexit
 import logging
+import sys
 import threading
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from pyspark.errors import AnalysisException
 from pyspark.sql.types import (
     IntegerType,
     StringType,
@@ -17,17 +21,21 @@ from pyspark.sql.types import (
 if TYPE_CHECKING:
     from pyspark.sql import SparkSession
 
-_LOG_SCHEMA = StructType([
-    StructField("timestamp", TimestampType(), nullable=False),
-    StructField("level", StringType(), nullable=False),
-    StructField("logger", StringType(), nullable=False),
-    StructField("message", StringType(), nullable=False),
-    StructField("module", StringType(), nullable=True),
-    StructField("function", StringType(), nullable=True),
-    StructField("line", IntegerType(), nullable=True),
-    StructField("thread", StringType(), nullable=True),
-    StructField("exception", StringType(), nullable=True),
-])
+    from src.core.types import DeltaLogEntry
+
+_LOG_SCHEMA = StructType(
+    [
+        StructField("timestamp", TimestampType(), nullable=False),
+        StructField("level", StringType(), nullable=False),
+        StructField("logger", StringType(), nullable=False),
+        StructField("message", StringType(), nullable=False),
+        StructField("module", StringType(), nullable=True),
+        StructField("function", StringType(), nullable=True),
+        StructField("line", IntegerType(), nullable=True),
+        StructField("thread", StringType(), nullable=True),
+        StructField("exception", StringType(), nullable=True),
+    ]
+)
 
 
 class DeltaLogHandler(logging.Handler):
@@ -45,7 +53,7 @@ class DeltaLogHandler(logging.Handler):
         self._table_name = table_name
         self._buffer_size = buffer_size
         self._flush_interval = flush_interval
-        self._buffer: list[dict] = []
+        self._buffer: list[DeltaLogEntry] = []
         self._lock = threading.Lock()
         self._timer: threading.Timer | None = None
 
@@ -68,10 +76,10 @@ class DeltaLogHandler(logging.Handler):
         """Buffer a log record."""
         try:
             exc_text = None
-            if record.exc_info:
-                exc_text = self.formatException(record.exc_info)
+            if record.exc_info and self.formatter:
+                exc_text = self.formatter.formatException(record.exc_info)
 
-            log_entry = {
+            log_entry: DeltaLogEntry = {
                 "timestamp": datetime.fromtimestamp(record.created, tz=UTC),
                 "level": record.levelname,
                 "logger": record.name,
@@ -87,7 +95,7 @@ class DeltaLogHandler(logging.Handler):
                 self._buffer.append(log_entry)
                 if len(self._buffer) >= self._buffer_size:
                     self._flush_buffer()
-        except Exception:  # noqa: BLE001
+        except (TypeError, ValueError, RuntimeError):
             self.handleError(record)
 
     def _flush_buffer(self) -> None:
@@ -107,8 +115,9 @@ class DeltaLogHandler(logging.Handler):
             else:
                 df.write.format("delta").mode("append").saveAsTable(self._table_name)
             self._buffer.clear()
-        except Exception as e:  # noqa: BLE001
-            print(f"Failed to write logs to Delta: {e}")  # noqa: T201
+        except AnalysisException as e:
+            # Log to stderr since can't use logging here
+            print(f"Failed to write logs to Delta: {e}", file=sys.stderr)
 
     def flush(self) -> None:
         """Flush all buffered records."""

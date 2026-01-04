@@ -90,4 +90,8 @@ class RemoteSparkSessionBuilder(AbstractSessionBuilder):
             Get the active spark session of the remote cluster.
 
         """
-        return SparkSession.getActiveSession()
+        session = SparkSession.getActiveSession()
+        if session is None:
+            msg = "No active SparkSession found on remote cluster"
+            raise RuntimeError(msg)
+        return session

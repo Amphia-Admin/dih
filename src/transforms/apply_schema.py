@@ -2,7 +2,7 @@
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import col, lit
-from pyspark.sql.types import StructType
+from pyspark.sql.types import DataType, StructType
 
 
 def apply_schema(df: DataFrame, schema: StructType) -> DataFrame:
@@ -49,13 +49,13 @@ def apply_schema(df: DataFrame, schema: StructType) -> DataFrame:
     return df.select(*select_cols)
 
 
-class _ColumnMapping(dict):
+class _ColumnMapping(dict[str, DataType]):
     """Internal mapping of lowercase column names to data types."""
 
     @classmethod
     def from_schema(cls, schema: StructType) -> _ColumnMapping:
         """Create mapping from StructType schema."""
-        mapping = {}
+        mapping: dict[str, DataType] = {}
         for field in schema.fields:
             lower_name = field.name.lower()
             if lower_name in mapping and field.dataType != mapping[lower_name]:
@@ -64,10 +64,10 @@ class _ColumnMapping(dict):
             mapping[lower_name] = field.dataType
         return cls(mapping)
 
-    def __sub__(self, other: _ColumnMapping) -> dict:
+    def __sub__(self, other: _ColumnMapping) -> dict[str, DataType]:
         """Return columns in self but not in other."""
         return {k: v for k, v in self.items() if k not in other}
 
-    def type_diff(self, other: _ColumnMapping) -> dict:
+    def type_diff(self, other: _ColumnMapping) -> dict[str, DataType]:
         """Return columns where types differ."""
         return {k: v for k, v in self.items() if k in other and v != other[k]}

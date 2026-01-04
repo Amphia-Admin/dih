@@ -1,15 +1,20 @@
 """Base Delta writer with shared logic for merge operations."""
 
+from __future__ import annotations
+
 import logging
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from delta.tables import DeltaTable
 
 from src.core.table_interfaces import TableDefinition, TargetTableDefMixin
 from src.writers.base_spark_writer import AbstractWriter
+
 if TYPE_CHECKING:
     from pyspark.sql import DataFrame, SparkSession
+
+    from src.core.types import WriteOptionsValue
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +22,9 @@ logger = logging.getLogger(__name__)
 class DeltaWriterBase(AbstractWriter):
     """Abstract base class for Delta writers with merge capabilities."""
 
-    def write(self, df: DataFrame, output_def: TableDefinition, **kwargs: Any) -> None:
+    def write(
+        self, df: DataFrame, output_def: TableDefinition, **kwargs: WriteOptionsValue
+    ) -> None:
         """
         Write DataFrame to Delta table with merge or initial write.
 
@@ -30,15 +37,13 @@ class DeltaWriterBase(AbstractWriter):
             DataFrame to write
         output_def : TableDefinition
             Target table definition
-        **kwargs : Any
+        **kwargs : WriteOptionsValue
             Additional write options
         """
         spark = df.sparkSession
 
         # Determine if managed or unmanaged
-        is_managed = (
-            isinstance(output_def, TargetTableDefMixin) and output_def.managed
-        )
+        is_managed = isinstance(output_def, TargetTableDefMixin) and output_def.managed
 
         if is_managed:
             table_name = output_def.table_name
@@ -78,7 +83,7 @@ class DeltaWriterBase(AbstractWriter):
         output_def: TableDefinition,
         spark: SparkSession,
         path: str,
-        **kwargs: Any,
+        **kwargs: WriteOptionsValue,
     ) -> None:
         """
         Perform merge operation on existing Delta table.
@@ -95,7 +100,7 @@ class DeltaWriterBase(AbstractWriter):
             SparkSession instance
         path : str
             Path to Delta table
-        **kwargs : Any
+        **kwargs : WriteOptionsValue
             Additional merge options
         """
         ...
@@ -105,7 +110,7 @@ class DeltaWriterBase(AbstractWriter):
         df: DataFrame,
         output_def: TableDefinition,
         path: str,
-        **kwargs: Any,
+        **kwargs: WriteOptionsValue,
     ) -> None:
         """
         Create new Delta table with initial data.
@@ -118,7 +123,7 @@ class DeltaWriterBase(AbstractWriter):
             Target table definition
         path : str
             Path to create Delta table at
-        **kwargs : Any
+        **kwargs : WriteOptionsValue
             Additional write options
         """
         logger.info(f"Creating new Delta table at: {path}")
@@ -148,7 +153,7 @@ class DeltaWriterBase(AbstractWriter):
         output_def: TableDefinition,
         spark: SparkSession,
         table_name: str,
-        **kwargs: Any,
+        **kwargs: WriteOptionsValue,
     ) -> None:
         """
         Perform merge operation on existing managed Delta table.
@@ -165,7 +170,7 @@ class DeltaWriterBase(AbstractWriter):
             SparkSession instance
         table_name : str
             Fully qualified table name
-        **kwargs : Any
+        **kwargs : WriteOptionsValue
             Additional merge options
         """
         ...
@@ -175,7 +180,7 @@ class DeltaWriterBase(AbstractWriter):
         df: DataFrame,
         output_def: TableDefinition,
         table_name: str,
-        **kwargs: Any,
+        **kwargs: WriteOptionsValue,
     ) -> None:
         """
         Create new managed Delta table with initial data.
@@ -188,7 +193,7 @@ class DeltaWriterBase(AbstractWriter):
             Target table definition
         table_name : str
             Fully qualified table name
-        **kwargs : Any
+        **kwargs : WriteOptionsValue
             Additional write options
         """
         logger.info(f"Creating new managed Delta table: {table_name}")

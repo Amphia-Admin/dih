@@ -1,7 +1,7 @@
 """Run the products pipeline."""
 
-from pipelines.bronze.pipelines.bronze_products_pipeline import BronzeProductsPipeline
 from loadcore.environment import Environment
+from pipelines.bronze.pipelines.bronze_products_pipeline import BronzeProductsPipeline
 from src.core.runner import Runner
 
 env = Environment("./env.config.yaml")

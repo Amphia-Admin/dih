@@ -1,7 +1,9 @@
 """Delta merge writer with automatic partition locking."""
 
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from delta.tables import DeltaTable
 
@@ -17,6 +19,8 @@ from src.writers.utils import (
 
 if TYPE_CHECKING:
     from pyspark.sql import DataFrame, SparkSession
+
+    from src.core.types import WriteOptionsValue
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +42,7 @@ class DeltaMergeAutoPartitionWriter(DeltaWriterBase):
         output_def: TableDefinition,
         spark: SparkSession,
         path: str,
-        **kwargs: Any,
+        **kwargs: WriteOptionsValue,
     ) -> None:
         """
         Perform merge operation with automatic partition locking.
@@ -53,7 +57,7 @@ class DeltaMergeAutoPartitionWriter(DeltaWriterBase):
             SparkSession instance
         path : str
             Path to Delta table
-        **kwargs : Any
+        **kwargs : WriteOptionsValue
             Additional merge options
 
         Raises
@@ -171,7 +175,7 @@ class DeltaMergeAutoPartitionWriter(DeltaWriterBase):
         output_def: TableDefinition,
         spark: SparkSession,
         table_name: str,
-        **kwargs: Any,
+        **kwargs: WriteOptionsValue,
     ) -> None:
         """
         Perform merge operation on managed table with automatic partition locking.
@@ -186,7 +190,7 @@ class DeltaMergeAutoPartitionWriter(DeltaWriterBase):
             SparkSession instance
         table_name : str
             Fully qualified table name
-        **kwargs : Any
+        **kwargs : WriteOptionsValue
             Additional merge options
 
         Raises

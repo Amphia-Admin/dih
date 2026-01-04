@@ -65,12 +65,15 @@ def load_remote_secrets(spark: SparkSession, secret_scope: str) -> list[Secret]:
         for secret_metadata in secrets_list:
             value = dbutils.secrets.get(secret_scope, secret_metadata.key)
             secrets.append(Secret(name=secret_metadata.key, _value=value))
-
-        logger.info(f"Loaded {len(secrets)} secret(s) from scope '{secret_scope}'")
-        return secrets
-    except Exception as e:
+    except (NameError, AttributeError, RuntimeError) as e:
+        # NameError: DBUtils not available (local mode)
+        # AttributeError: secrets API not available
+        # RuntimeError: Databricks API errors
         logger.warning(f"Failed to load remote secrets: {e}")
         return []
+    else:
+        logger.info(f"Loaded {len(secrets)} secret(s) from scope '{secret_scope}'")
+        return secrets
 
 
 def inject_secrets_to_env(secrets: list[Secret]) -> None:

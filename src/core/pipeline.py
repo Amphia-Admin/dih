@@ -1,26 +1,31 @@
 """Pipeline base classes and decorators."""
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from src.core.result import ProcessingResult
 
 if TYPE_CHECKING:
     from pyspark.sql import DataFrame
 
+    from src.core.types import PipelineMetadata, SparkConfig
+
 
 class AbstractProcessingComponent(ABC):
     """Base class for all processing components."""
 
-    static_config: dict[str, Any] = {}
+    static_config: SparkConfig = {}
 
     def __init__(self) -> None:
         self._inputs: dict[str, DataFrame] = {}
-        self._metadata: dict[str, Any] = {}
+        self._metadata: PipelineMetadata = {}
         self._outputs: ProcessingResult = ProcessingResult()
 
     @abstractmethod
-    def process(self, *args: Any, **kwargs: Any) -> None:
+    def process(self) -> None:
         """Execute the processing logic."""
         ...
 
@@ -35,12 +40,12 @@ class AbstractProcessingComponent(ABC):
         self._inputs.update(value)
 
     @property
-    def metadata(self) -> dict[str, Any]:
+    def metadata(self) -> PipelineMetadata:
         """Return metadata dictionary."""
         return self._metadata
 
     @metadata.setter
-    def metadata(self, value: dict[str, Any]) -> None:
+    def metadata(self, value: PipelineMetadata) -> None:
         """Set metadata."""
         self._metadata = value
 
@@ -59,7 +64,7 @@ class Pipeline(AbstractProcessingComponent):
     def __init__(self) -> None:
         super().__init__()
 
-    def process(self, *args: Any, **kwargs: Any) -> None:
+    def process(self) -> None:
         """Override in subclass to implement pipeline logic."""
 
     def __repr__(self) -> str:
@@ -75,14 +80,27 @@ class Pipeline(AbstractProcessingComponent):
         return f"<{self.__class__.__name__}: {desc}>"
 
 
-def pipeline_definition(name: str, description: str = "") -> Any:
-    """Define pipeline metadata via decorator."""
+type PipelineDecorator = Callable[[type[Pipeline]], type[Pipeline]]
+
+
+def pipeline_definition(name: str, description: str = "") -> PipelineDecorator:
+    """
+    Define pipeline metadata via decorator.
+
+    Parameters
+    ----------
+    name : str
+        The name of the pipeline.
+    description : str, optional
+        A description of the pipeline.
+
+    Returns
+    -------
+    PipelineDecorator
+        A decorator that sets the pipeline name and description.
+    """
 
     def decorator(pipeline: type[Pipeline]) -> type[Pipeline]:
-        if not issubclass(pipeline, Pipeline):
-            msg = "Expected subclass of 'Pipeline'"
-            raise ValueError(msg)
-
         pipeline.name = name
         pipeline.description = description
         return pipeline

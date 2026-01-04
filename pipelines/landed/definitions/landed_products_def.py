@@ -1,15 +1,15 @@
 """Landed layer table definition for products."""
 
-from pathlib import Path
-from typing import Any
+from __future__ import annotations
 
-from src.core.table_interfaces import TableDefinition
+from pathlib import Path
+
 from src.constants import FileFormat
+from src.core.table_interfaces import TableDefinition
 
 
 class LandedProductsDef(TableDefinition):
-    """
-    CSV source for raw product data.
+    """CSV source for raw product data.
 
     Reads from the lake volume path.
     """
@@ -26,7 +26,7 @@ class LandedProductsDef(TableDefinition):
         return FileFormat.CSV.value
 
     @property
-    def options(self) -> dict[str, Any]:
+    def options(self) -> dict[str, str]:
         """Get CSV read options."""
         return {
             "header": "true",

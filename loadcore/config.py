@@ -3,10 +3,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from pyspark.sql import SparkSession
+
+    from src.core.types import PipelineMetadata, SparkConfig
+
+
+class VolumeNotConfiguredError(KeyError):
+    """Raised when a requested volume is not configured."""
+
+    def __init__(self, volume_name: str) -> None:
+        self.volume_name = volume_name
+        super().__init__(f"Volume '{volume_name}' not configured in environment")
 
 
 @dataclass(frozen=True)
@@ -36,8 +46,8 @@ class PipelineConfig:
     spark: SparkSession
     catalog: str
     volumes: dict[str, str] = field(default_factory=dict)
-    metadata: dict[str, Any] = field(default_factory=dict)
-    static_config: dict[str, Any] = field(default_factory=dict)
+    metadata: PipelineMetadata = field(default_factory=dict)
+    static_config: SparkConfig = field(default_factory=dict)
     spark_conf: dict[str, str] = field(default_factory=dict)
 
     def get_volume(self, name: str) -> str:
@@ -55,9 +65,9 @@ class PipelineConfig:
 
         Raises
         ------
-        KeyError
+        VolumeNotConfiguredError
             If volume name not found
         """
         if name not in self.volumes:
-            raise KeyError(f"Volume '{name}' not configured in environment")
+            raise VolumeNotConfiguredError(name)
         return self.volumes[name]

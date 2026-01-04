@@ -30,7 +30,7 @@ class ProcessingResult(Mapping[str, DataFrame]):
         try:
             return self._results[item]
         except KeyError:
-            logger.error(f"No such item found: {item}")
+            logger.exception("No such item found: %s", item)
             raise
 
     def __contains__(self, key: object) -> bool:

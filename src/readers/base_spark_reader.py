@@ -1,14 +1,16 @@
 """Spark DataFrame reader implementation."""
 
 import logging
-
-from pyspark.sql import DataFrame, SparkSession
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
+
+from pyspark.sql import DataFrame, SparkSession
+
 if TYPE_CHECKING:
     from src.core.table_interfaces import TableDefinition
 
 logger = logging.getLogger(__name__)
+
 
 class AbstractReader(ABC):
     """Abstract reader interface."""
@@ -65,7 +67,8 @@ class SparkDataFrameReader(AbstractReader):
             reader = reader.options(**options)
 
         self._data = reader.load(path)
-        logger.debug(f"Schema: {[f'{f.name}:{f.dataType.simpleString()}' for f in self._data.schema.fields]}")
+        schema_desc = [f"{f.name}:{f.dataType.simpleString()}" for f in self._data.schema.fields]
+        logger.debug(f"Schema: {schema_desc}")
         return self._data
 
     @property
