@@ -4,9 +4,6 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
-    from pyspark.sql import DataFrame
     from pyspark.sql.types import StructType
 
 

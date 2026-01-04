@@ -69,7 +69,7 @@ class JSONFormatter(logging.Formatter):
         message = self._prepare_log_dict(record)
         return json.dumps(message, default=str)
 
-    def _prepare_log_dict(self, record: logging.LogRecord) -> dict[str, ]:
+    def _prepare_log_dict(self, record: logging.LogRecord) -> dict[str, object]:
         """
         Prepare log record dictionary for JSON serialization.
 

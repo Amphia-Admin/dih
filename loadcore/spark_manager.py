@@ -6,7 +6,6 @@ __project__ = "Colibri-Demo"
 
 from abc import ABC, abstractmethod
 
-from delta import configure_spark_with_delta_pip
 from pyspark.sql import SparkSession
 
 
@@ -49,6 +48,7 @@ class LocalSparkSessionBuilder(AbstractSessionBuilder):
         """
         return (
             SparkSession.builder.appName(self.app_name)
+            .config("spark.plugins", "io.dataflint.spark.SparkDataflintPlugin")
             .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
             .config("spark.sql.warehouse.dir", self.catalog_path)
             .config(
@@ -58,7 +58,6 @@ class LocalSparkSessionBuilder(AbstractSessionBuilder):
             .config("spark.databricks.delta.optimizeWrite.enabled", "true")
             .config("spark.databricks.delta.autoCompact.enabled", "true")
             .config("spark.sql.execution.arrow.pyspark.enabled", "true")
-            .enableHiveSupport()
         )
 
     def create_spark_session(self) -> SparkSession:
@@ -71,7 +70,11 @@ class LocalSparkSessionBuilder(AbstractSessionBuilder):
             Create spark session
 
         """
-        return configure_spark_with_delta_pip(self.builder).getOrCreate()
+        builder = self.builder.config(
+            "spark.jars.packages",
+            "io.delta:delta-spark_2.13:4.0.0,io.dataflint:dataflint-spark4_2.13:0.7.0",
+        )
+        return builder.getOrCreate()
 
 
 class RemoteSparkSessionBuilder(AbstractSessionBuilder):
