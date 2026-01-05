@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from pyspark.sql import SparkSession
 
 with contextlib.suppress(ModuleNotFoundError):
-    from pyspark.dbutils import DBUtils
+    from pyspark.dbutils import DBUtils  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 

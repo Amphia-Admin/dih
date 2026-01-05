@@ -133,6 +133,8 @@ class WriterRegistry:
 class register_writer:
     """Decorator to register a writer with a transformation."""
 
+    _alias: str
+
     def __init__(
         self,
         definition: type[TableDefinition],
@@ -145,7 +147,7 @@ class register_writer:
         if alias is not None:
             self._alias = alias
         elif hasattr(definition, "default_alias"):
-            self._alias = definition.default_alias  # type: ignore[assignment]
+            self._alias = str(definition.default_alias)
         else:
             msg = (
                 f"No alias defined for '{definition}'. "

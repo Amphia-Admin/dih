@@ -190,8 +190,8 @@ class Environment:
 
             queue_handler = logging.getHandlerByName("queue_handler")
             if queue_handler is not None and hasattr(queue_handler, "listener"):
-                queue_handler.listener.start()
-                atexit.register(queue_handler.listener.stop)
+                queue_handler.listener.start()  # type: ignore[attr-defined]
+                atexit.register(queue_handler.listener.stop)  # type: ignore[attr-defined]
 
         self._logging_initialised = True
         logger.info("Logging initialised")

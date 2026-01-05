@@ -17,8 +17,8 @@ def setup_logging() -> None:
     logging.config.dictConfig(config)
     queue_handler = logging.getHandlerByName("queue_handler")
     if queue_handler is not None and hasattr(queue_handler, "listener"):
-        queue_handler.listener.start()
-        atexit.register(queue_handler.listener.stop)
+        queue_handler.listener.start()  # type: ignore[attr-defined]
+        atexit.register(queue_handler.listener.stop)  # type: ignore[attr-defined]
 
 
 def main() -> None:
